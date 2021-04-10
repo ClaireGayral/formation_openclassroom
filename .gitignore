@@ -1,6 +1,7 @@
 ## added by hand : 
 __MACOSX/
 data/
+*.zip
 
 
 # Byte-compiled / optimized / DLL files
