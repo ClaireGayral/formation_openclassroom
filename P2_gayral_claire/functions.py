@@ -5,12 +5,53 @@ import pandas as pd
 import matplotlib._color_data as mcd
 import random
 
+def get_str_vars(list_of_var):
+    # from a list of str, return a sentence
+    # if the line is too long (sup to 40), cut
+    tmp = list_of_var.copy()
+    res = ""
+    len_line = 0
+    while tmp : 
+        var = tmp.pop()
+        res = res+ var +str(", ")
+        len_line += len(var)
+        if len_line > 40:
+            res = res +"\n"
+            len_line = 0
+    return(res)
+
+def draw_cluster_legend(ax2,cluster,my_color_set):
+    ## plot the legend with colored arrow
+    # number of clusters : 
+    K = max(cluster)+1
+    # plot parallel arrows :
+    ax2.quiver(np.zeros(K),np.arange(0,K),np.ones(K),np.zeros(K),
+               color = my_color_set[:K])
+    # plot legend text next to the respective arrow :
+    for k in range(K):
+        cluster_var = get_str_vars(list(cluster[cluster == k].index.values))
+        ax2.text(0.2, k , str(cluster_var), fontsize='11',
+                 ha='left', va='center' , alpha=1)
+    # set limits : 
+    ax2.set_xlim([-0.1,2])
+    ax2.set_ylim([-1.1, K+0.1])
+    ax2.set_title("Clustering legend")
+    # remove axis :
+    ax2.get_xaxis().set_visible(False)
+    ax2.get_yaxis().set_visible(False)
+    plt.axis("off")
+    return(ax2)
+# fig2, ax2 = plt.subplots(1,1)
+# draw_cluster_legend(ax2, cluster)
+# plt.show()
+
 def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None, cluster = None):
+    ## draw the correlation circle for pca : 
     for d1, d2 in axis_ranks: # On affiche les 3 premiers plans factoriels, donc les 6 premières composantes
         if d2 < n_comp:
-
+            fig = plt.figure(figsize = (18,6))
             # initialisation de la figure
-            fig, ax = plt.subplots(figsize=(7,6))
+            ax1 = fig.add_subplot(1,2,1)
 
             # détermination des limites du graphique
             if lims is not None :
@@ -23,47 +64,58 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             # affichage des flèches
             # gestion de la couleur si cluster : 
             if cluster is not None : 
-                my_color_set = random.sample(list(mcd.CSS4_COLORS.keys()), max(cluster3)+1)
-                my_color = [my_color_set[i] for i in cluster3.values]
+                my_color_set = ['#c0022f', '#ff073a', '#f97306', '#fdaa48', 
+                        '#fffd01', '#fea993', '#fe7b7c', '#ff81c0', '#fe02a2', 
+                        '#c20078', '#c79fef', '#7e1e9c', '#380282', '#0343df', 
+                        '#75bbfd', '#6b8ba4', '#029386', '#017371', '#15b01a', 
+                        '#677a04', '#b25f03', '#8b3103', '#070d0d', '#c5c9c7']
+                my_color = [my_color_set[i] for i in cluster.values]
             else : 
                 my_color = "grey"
-            
+
 
             # s'il y a plus de 30 flèches, on n'affiche pas le triangle à leur extrémité
             if pcs.shape[1] < 30 :
-                plt.quiver(np.zeros(pcs.shape[1]), np.zeros(pcs.shape[1]),
-                   pcs[d1,:], pcs[d2,:], 
-                   angles='xy', scale_units='xy', scale=1, color=my_color)
+                ax1.quiver(np.zeros(pcs.shape[1]), np.zeros(pcs.shape[1]),
+                           pcs[d1,:], pcs[d2,:], angles='xy', scale_units='xy', 
+                           scale=1, color=my_color)
                 # (voir la doc : https://matplotlib.org/api/_as_gen/matplotlib.pyplot.quiver.html)
             else:
                 lines = [[[0,0],[x,y]] for x,y in pcs[[d1,d2]].T]
-                ax.add_collection(LineCollection(lines, axes=ax, alpha=.1, color=my_color))
-            
+                ax1.add_collection(LineCollection(lines, axes=ax, alpha=.1, color=my_color))
+
             # affichage des noms des variables  
             if labels is not None:  
                 for i,(x, y) in enumerate(pcs[[d1,d2]].T):
                     if x >= xmin and x <= xmax and y >= ymin and y <= ymax :
-                        plt.text(x, y, labels[i], fontsize='14', ha='center', 
+                        ax1.text(x, y, labels[i], fontsize='14', ha='center', 
                                  va='center', rotation=label_rotation, color="blue", alpha=0.5)
-            
+
             # affichage du cercle
             circle = plt.Circle((0,0), 1, facecolor='none', edgecolor='b')
             plt.gca().add_artist(circle)
 
             # définition des limites du graphique
-            plt.xlim(xmin, xmax)
-            plt.ylim(ymin, ymax)
-        
+            ax1.set_xlim(xmin, xmax)
+            ax1.set_ylim(ymin, ymax)
+
             # affichage des lignes horizontales et verticales
             plt.plot([-1, 1], [0, 0], color='grey', ls='--')
             plt.plot([0, 0], [-1, 1], color='grey', ls='--')
 
             # nom des axes, avec le pourcentage d'inertie expliqué
-            plt.xlabel('F{} ({}%)'.format(d1+1, round(100*pca.explained_variance_ratio_[d1],1)))
-            plt.ylabel('F{} ({}%)'.format(d2+1, round(100*pca.explained_variance_ratio_[d2],1)))
+            ax1.set_xlabel('F{} ({}%)'.format(d1+1, 
+                                round(100*pca.explained_variance_ratio_[d1],1)))
+            ax1.set_ylabel('F{} ({}%)'.format(d2+1, 
+                                round(100*pca.explained_variance_ratio_[d2],1)))
+            ax1.set_title("Cercle des corrélations (F{} et F{})".format(d1+1, d2+1))
 
-            plt.title("Cercle des corrélations (F{} et F{})".format(d1+1, d2+1))
+            ## affichage de la legende du clustering en couleur : 
+            if cluster is not None : 
+                ax2 = fig.add_subplot(1,2,2)
+                draw_cluster_legend(ax2, cluster,my_color_set)
             plt.show(block=False)
+            
         
 def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, alpha=1, illustrative_var=None):
     for d1,d2 in axis_ranks:
