@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy as np
-import pandas as pd
+import pandas as pd 
+import matplotlib._color_data as mcd
+import random
 
-def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None):
+def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None, cluster = None):
     for d1, d2 in axis_ranks: # On affiche les 3 premiers plans factoriels, donc les 6 premières composantes
         if d2 < n_comp:
 
@@ -19,21 +21,30 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
                 xmin, xmax, ymin, ymax = min(pcs[d1,:]), max(pcs[d1,:]), min(pcs[d2,:]), max(pcs[d2,:])
 
             # affichage des flèches
+            # gestion de la couleur si cluster : 
+            if cluster is not None : 
+                my_color_set = random.sample(list(mcd.CSS4_COLORS.keys()), max(cluster3)+1)
+                my_color = [my_color_set[i] for i in cluster3.values]
+            else : 
+                my_color = "grey"
+            
+
             # s'il y a plus de 30 flèches, on n'affiche pas le triangle à leur extrémité
             if pcs.shape[1] < 30 :
                 plt.quiver(np.zeros(pcs.shape[1]), np.zeros(pcs.shape[1]),
                    pcs[d1,:], pcs[d2,:], 
-                   angles='xy', scale_units='xy', scale=1, color="grey")
+                   angles='xy', scale_units='xy', scale=1, color=my_color)
                 # (voir la doc : https://matplotlib.org/api/_as_gen/matplotlib.pyplot.quiver.html)
             else:
                 lines = [[[0,0],[x,y]] for x,y in pcs[[d1,d2]].T]
-                ax.add_collection(LineCollection(lines, axes=ax, alpha=.1, color='black'))
+                ax.add_collection(LineCollection(lines, axes=ax, alpha=.1, color=my_color))
             
             # affichage des noms des variables  
             if labels is not None:  
                 for i,(x, y) in enumerate(pcs[[d1,d2]].T):
                     if x >= xmin and x <= xmax and y >= ymin and y <= ymax :
-                        plt.text(x, y, labels[i], fontsize='14', ha='center', va='center', rotation=label_rotation, color="blue", alpha=0.5)
+                        plt.text(x, y, labels[i], fontsize='14', ha='center', 
+                                 va='center', rotation=label_rotation, color="blue", alpha=0.5)
             
             # affichage du cercle
             circle = plt.Circle((0,0), 1, facecolor='none', edgecolor='b')
@@ -92,6 +103,7 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, labels=None, 
 
             plt.title("Projection des individus (sur F{} et F{})".format(d1+1, d2+1))
             plt.show(block=False)
+            
 
 def display_scree_plot(pca):
     scree = pca.explained_variance_ratio_*100
@@ -101,3 +113,21 @@ def display_scree_plot(pca):
     plt.ylabel("pourcentage d'inertie")
     plt.title("Eboulis des valeurs propres")
     plt.show(block=False)
+    
+##
+## TP hierarchical clustering
+## 
+
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import dendrogram
+
+def plot_dendrogram(Z, names, figsize = (10,25)):
+    plt.figure(figsize=figsize)
+    plt.title('Hierarchical Clustering Dendrogram')
+    plt.xlabel('distance')
+    dendrogram(
+        Z,
+        labels = names,
+        orientation = "left",
+    )
+    plt.show()
