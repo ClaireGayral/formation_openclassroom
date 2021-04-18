@@ -2,6 +2,7 @@
 __MACOSX/
 data/
 *.zip
+brouillons_et_tests/
 
 
 # Byte-compiled / optimized / DLL files
