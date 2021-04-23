@@ -1,279 +1,132 @@
-# Authors: Ashim Bhattarai <ashimb9@gmail.com>
-#          Thomas J Fan <thomasjpfan@gmail.com>
-# License: BSD 3 clause
-## modification by C Gayral
-
 import numpy as np
+import pandas as pd
 
-from ._base import _BaseImputer
-from ..utils.validation import FLOAT_DTYPES
-from ..metrics import pairwise_distances_chunked
-from ..metrics.pairwise import _NAN_METRICS
-from ..neighbors._base import _get_weights
-from ..neighbors._base import _check_weights
-from ..utils import is_scalar_nan
-from ..utils._mask import _get_mask
-from ..utils.validation import check_is_fitted
-from ..utils.validation import _deprecate_positional_args
+energy_var =  ['energy-kj_100g', 'energy-kcal_100g', 'energy_100g',
+               'fat_100g','saturated-fat_100g']
+
+var_rescale_100g = ['monounsaturated-fat_100g','polyunsaturated-fat_100g',
+                     'omega-3-fat_100g','omega-6-fat_100g', 'omega-9-fat_100g',
+                     'trans-fat_100g','cholesterol_100g','carbohydrates_100g',
+                     'sugars_100g','starch_100g','polyols_100g','fiber_100g', 
+                     'proteins_100g','casein_100g','serum-proteins_100g',
+                     'nucleotides_100g','sodium_100g','alcohol_100g',
+                     'vitamin-a_100g','vitamin-d_100g','vitamin-e_100g',
+                     'vitamin-k_100g','vitamin-c_100g','vitamin-b1_100g',
+                     'vitamin-b2_100g','vitamin-pp_100g','vitamin-b6_100g',
+                     'vitamin-b9_100g','vitamin-b12_100g','biotin_100g',
+                     'pantothenic-acid_100g', 'silica_100g','bicarbonate_100g',
+                     'potassium_100g','chloride_100g','calcium_100g',
+                     'phosphorus_100g', 'iron_100g','magnesium_100g',
+                     'zinc_100g','copper_100g', 'manganese_100g',
+                     'fluoride_100g', 'selenium_100g','chromium_100g',
+                      'molybdenum_100g','iodine_100g', 'caffeine_100g',
+                     'taurine_100g', 'ph_100g','fruits-vegetables-nuts_100g']
+                        
+possible_val_dict = { # var_rescale_100g
+                     'monounsaturated-fat_100g':[0,100],
+                     'polyunsaturated-fat_100g':[0,100],
+                     'omega-3-fat_100g':[0,100], 'omega-6-fat_100g':[0,100],
+                     'omega-9-fat_100g':[0,100], 'trans-fat_100g':[0,100], 
+                     'cholesterol_100g':[0,100],'carbohydrates_100g':[0,100],
+                     'sugars_100g':[0,100], 'starch_100g':[0,100], 
+                     'polyols_100g':[0,100],'fiber_100g':[0,100], 
+                     'proteins_100g':[0,100], 'casein_100g':[0,100],
+                     'serum-proteins_100g':[0,100], 'nucleotides_100g':[0,100],
+                     'sodium_100g':[0,100],'alcohol_100g':[0,100], 
+                     'vitamin-a_100g':[0,1], 'vitamin-d_100g':[0,1],
+                     'vitamin-e_100g':[0,1], 'vitamin-k_100g':[0,1],
+                     'vitamin-c_100g':[0,1],'vitamin-b1_100g':[0,1],
+                     'vitamin-b2_100g':[0,1], 'vitamin-pp_100g':[0,1],
+                     'vitamin-b6_100g':[0,1], 'vitamin-b9_100g':[0,1],
+                     'vitamin-b12_100g':[0,1],'biotin_100g':[0,100],
+                     'pantothenic-acid_100g':[0,10], 'silica_100g':[0,100],
+                     'bicarbonate_100g':[0,10], 'potassium_100g':[0,100],
+                     'chloride_100g':[0,100],'calcium_100g':[0,100],
+                     'phosphorus_100g':[0,100], 'iron_100g':[0,100],
+                     'magnesium_100g':[0,100],'zinc_100g':[0,100],
+                     'copper_100g':[0,100], 'manganese_100g':[0,100],
+                     'fluoride_100g':[0,100], 'selenium_100g':[0,100], 
+                     'chromium_100g':[0,100], 'molybdenum_100g':[0,100], 
+                     'iodine_100g':[0,100], 'caffeine_100g':[0,100], 
+                     'taurine_100g':[0,100], 'ph_100g':[0,100],
+                     'fruits-vegetables-nuts_100g':[0,100],
+                      # energy_var : 
+                     'energy-kj_100g':[0,25000],
+                     'energy-kcal_100g':[0,5000], 'energy_100g':[0,30000],
+                     'fat_100g':[0,100], 'saturated-fat_100g':[0,100],
+                      # other
+                     'additives_n':[0,35], 'ingredients_from_palm_oil': [0,1],
+                     'carbon-footprint_100g':[0,5000],
+                     'nutrition-score-fr_100g':[-20,50],'nutrition-score-uk_100g':[-5,25]}
 
 
-class KNNImputer(_BaseImputer):
-    """Imputation for completing missing values using k-Nearest Neighbors.
-    Each sample's missing values are imputed using the mean value from
-    `n_neighbors` nearest neighbors found in the training set. Two samples are
-    close if the features that neither is missing are close.
-    Read more in the :ref:`User Guide <knnimpute>`.
-    .. versionadded:: 0.22
-    Parameters
-    ----------
-    missing_values : int, float, str, np.nan or None, default=np.nan
-        The placeholder for the missing values. All occurrences of
-        `missing_values` will be imputed. For pandas' dataframes with
-        nullable integer dtypes with missing values, `missing_values`
-        should be set to np.nan, since `pd.NA` will be converted to np.nan.
-    n_neighbors : int, default=5
-        Number of neighboring samples to use for imputation.
-    weights : {'uniform', 'distance'} or callable, default='uniform'
-        Weight function used in prediction.  Possible values:
-        - 'uniform' : uniform weights. All points in each neighborhood are
-          weighted equally.
-        - 'distance' : weight points by the inverse of their distance.
-          in this case, closer neighbors of a query point will have a
-          greater influence than neighbors which are further away.
-        - callable : a user-defined function which accepts an
-          array of distances, and returns an array of the same shape
-          containing the weights.
-    metric : {'nan_euclidean'} or callable, default='nan_euclidean'
-        Distance metric for searching neighbors. Possible values:
-        - 'nan_euclidean'
-        - callable : a user-defined function which conforms to the definition
-          of ``_pairwise_callable(X, Y, metric, **kwds)``. The function
-          accepts two arrays, X and Y, and a `missing_values` keyword in
-          `kwds` and returns a scalar distance value.
-    copy : bool, default=True
-        If True, a copy of X will be created. If False, imputation will
-        be done in-place whenever possible.
-    add_indicator : bool, default=False
-        If True, a :class:`MissingIndicator` transform will stack onto the
-        output of the imputer's transform. This allows a predictive estimator
-        to account for missingness despite imputation. If a feature has no
-        missing values at fit/train time, the feature won't appear on the
-        missing indicator even if there are missing values at transform/test
-        time.
-    Attributes
-    ----------
-    indicator_ : :class:`~sklearn.impute.MissingIndicator`
-        Indicator used to add binary indicators for missing values.
-        ``None`` if add_indicator is False.
-    References
-    ----------
-    * Olga Troyanskaya, Michael Cantor, Gavin Sherlock, Pat Brown, Trevor
-      Hastie, Robert Tibshirani, David Botstein and Russ B. Altman, Missing
-      value estimation methods for DNA microarrays, BIOINFORMATICS Vol. 17
-      no. 6, 2001 Pages 520-525.
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from sklearn.impute import KNNImputer
-    >>> X = [[1, 2, np.nan], [3, 4, 3], [np.nan, 6, 5], [8, 8, 7]]
-    >>> imputer = KNNImputer(n_neighbors=2)
-    >>> imputer.fit_transform(X)
-    array([[1. , 2. , 4. ],
-           [3. , 4. , 3. ],
-           [5.5, 6. , 5. ],
-           [8. , 8. , 7. ]])
-    """
-    @_deprecate_positional_args
-    def __init__(self, *, missing_values=np.nan, n_neighbors=5,
-                 weights="uniform", metric="nan_euclidean", copy=True,
-                 add_indicator=False):
-        super().__init__(
-            missing_values=missing_values,
-            add_indicator=add_indicator
-        )
-        self.n_neighbors = n_neighbors
-        self.weights = weights
-        self.metric = metric
-        self.copy = copy
+def extract_irreg_errors_val(colname,possible_values, data):
+    outliers_val = []
+    col_values = data[colname].drop_duplicates().values
+    ## check possible values : 
+    min_value, max_value = possible_values
+    for val in col_values :
+        if ~np.isnan(val) :
+            if (val < min_value) or (val > max_value):
+                outliers_val.append(val)
+#         else : 
+#             print(sum(data[colname].isna()),"missing values")
+#     print(len(outliers_val), "item values out of the intervall", possible_values)
+    return outliers_val
 
-    def _calc_impute(self, dist_pot_donors, n_neighbors,
-                     fit_X_col, mask_fit_X_col):
-        """Helper function to impute a single column.
-        Parameters
-        ----------
-        dist_pot_donors : ndarray of shape (n_receivers, n_potential_donors)
-            Distance matrix between the receivers and potential donors from
-            training set. There must be at least one non-nan distance between
-            a receiver and a potential donor.
-        n_neighbors : int
-            Number of neighbors to consider.
-        fit_X_col : ndarray of shape (n_potential_donors,)
-            Column of potential donors from training set.
-        mask_fit_X_col : ndarray of shape (n_potential_donors,)
-            Missing mask for fit_X_col.
-        Returns
-        -------
-        imputed_values: ndarray of shape (n_receivers,)
-            Imputed values for receiver.
-        """
-        # Get donors
-        donors_idx = np.argpartition(dist_pot_donors, n_neighbors - 1,
-                                     axis=1)[:, :n_neighbors]
+def help_to_set_outliers_vals(df, colname, possible_vals):
+    data = df.copy()
+    fig = plt.figure(figsize=(15, 5))
 
-        # Get weight matrix from from distance matrix
-        donors_dist = dist_pot_donors[
-            np.arange(donors_idx.shape[0])[:, None], donors_idx]
+    ## Histogramme global 
+    ax = fig.add_subplot(1,3,1)
+    nb_bins = min(50, len(np.unique(data[colname].dropna().values)))
+    ax.hist(data[colname], bins = nb_bins, color='steelblue', density=True, edgecolor='none')
+    ax.set_title("before removing outliers " + colname)
 
-        weight_matrix = _get_weights(donors_dist, self.weights)
+    outliers = extract_irreg_errors_val(colname,possible_vals, data = data)
+    print("outliers products :",np.array(data.loc[data[colname].isin(outliers), "product_name"]), "\n")
+    # replace outliers by np.nan : 
+    data.at[data[colname].isin(outliers)] = np.nan
 
-        # fill nans with zeros
-        if weight_matrix is not None:
-            weight_matrix[np.isnan(weight_matrix)] = 0.0
+    ## Histogramme : 
+    ax = fig.add_subplot(1,3,2)
+    nb_bins = min(50, len(np.unique(data[colname].dropna().values)))
+    ax.hist(data[colname], bins = nb_bins, color='steelblue', density=True, edgecolor='none')
+    ax.set_title("after removing outliers " + colname)
 
-        # Retrieve donor values and calculate kNN average
-        donors = fit_X_col.take(donors_idx)
-        donors_mask = mask_fit_X_col.take(donors_idx)
-        donors = np.ma.array(donors, mask=donors_mask)
+    # plot values : 
+    ax = fig.add_subplot(1,3,3)
+    ax.plot(np.sort(data[colname]))
+    return( outliers )
 
-        return np.ma.average(donors, axis=1, weights=weight_matrix).data
+def rescale_outliers100g_val(data,possible_val_dict = possible_val_dict, concerned_var = var_rescale_100g):
+    # from the hyp that the variable has been entered in mg instead of g -> rescale 
+    # count_rescaled = pd.Series(np.zeros(len(data.columns)),index = data.columns)
+    for colname in data.columns.intersection(concerned_var):
+        min_value, max_value = possible_val_dict[colname] 
+        is_outlier = (data[colname] < min_value) | (data[colname]>max_value) | ~data[colname].isna()  
+        data.at[is_outlier, colname] = data.loc[is_outlier,colname]/1000 
+    #     count_rescaled[colname] = sum(is_outlier)
+    return(data)
 
-    def fit(self, X, y=None):
-        """Fit the imputer on X.
-        Parameters
-        ----------
-        X : array-like shape of (n_samples, n_features)
-            Input data, where `n_samples` is the number of samples and
-            `n_features` is the number of features.
-        Returns
-        -------
-        self : object
-        """
-        # Check data integrity and calling arguments
-        if not is_scalar_nan(self.missing_values):
-            force_all_finite = True
-        else:
-            force_all_finite = "allow-nan"
-            if self.metric not in _NAN_METRICS and not callable(self.metric):
-                raise ValueError(
-                    "The selected metric does not support NaN values")
-        if self.n_neighbors <= 0:
-            raise ValueError(
-                "Expected n_neighbors > 0. Got {}".format(self.n_neighbors))
+def drop_outliers(data, possible_val_dict = possible_val_dict):
+    ## drop outliers 
+    for colname in data.columns.intersection(possible_val_dict.keys()):
+        min_value, max_value = possible_val_dict[colname] 
+        is_outlier = (data[colname] < min_value) | (data[colname]>max_value) #| (~data[colname].isna())  
+        data.at[is_outlier, colname] = np.nan
+    ## drop product with more than less than the median of missing values
+    nan_repartition_row = data.isna().sum(axis=1)
+    threshold_row = nan_repartition_row.mean()
+    dropped_products = nan_repartition_row[nan_repartition_row>threshold_row].index
+    data = data.drop(dropped_products, axis = 0)
 
-        X = self._validate_data(X, accept_sparse=False, dtype=FLOAT_DTYPES,
-                                force_all_finite=force_all_finite,
-                                copy=self.copy)
+    ## drop variables with more thant the 3rd quantile of missing values
+    subset_var = data.columns[data.isna().sum(axis=0)>0]
+    nan_repartition_col = data[subset_var].isna().sum(axis=0)
+    threshold_col = nan_repartition_col.quantile(0.75)
+    dropped_variables = nan_repartition_col[nan_repartition_col>threshold_col].index
+    data = data.drop(dropped_variables, axis = 1)
+    return(data)
 
-        _check_weights(self.weights)
-        self._fit_X = X
-        self._mask_fit_X = _get_mask(self._fit_X, self.missing_values)
-
-        super()._fit_indicator(self._mask_fit_X)
-
-        return self
-
-    def transform(self, X):
-        """Impute all missing values in X.
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            The input data to complete.
-        Returns
-        -------
-        X : array-like of shape (n_samples, n_output_features)
-            The imputed dataset. `n_output_features` is the number of features
-            that is not always missing during `fit`.
-        """
-
-        check_is_fitted(self)
-        if not is_scalar_nan(self.missing_values):
-            force_all_finite = True
-        else:
-            force_all_finite = "allow-nan"
-        X = self._validate_data(X, accept_sparse=False, dtype=FLOAT_DTYPES,
-                                force_all_finite=force_all_finite,
-                                copy=self.copy, reset=False)
-
-        mask = _get_mask(X, self.missing_values)
-        mask_fit_X = self._mask_fit_X
-        valid_mask = ~np.all(mask_fit_X, axis=0)
-
-        X_indicator = super()._transform_indicator(mask)
-
-        # Removes columns where the training data is all nan
-        if not np.any(mask):
-            # No missing values in X
-            # Remove columns where the training data is all nan
-            return X[:, valid_mask]
-
-        row_missing_idx = np.flatnonzero(mask.any(axis=1))
-
-        non_missing_fix_X = np.logical_not(mask_fit_X)
-
-        # Maps from indices from X to indices in dist matrix
-        dist_idx_map = np.zeros(X.shape[0], dtype=int)
-        dist_idx_map[row_missing_idx] = np.arange(row_missing_idx.shape[0])
-
-        def process_chunk(dist_chunk, start):
-            row_missing_chunk = row_missing_idx[start:start + len(dist_chunk)]
-
-            # Find and impute missing by column
-            for col in range(X.shape[1]):
-                if not valid_mask[col]:
-                    # column was all missing during training
-                    continue
-
-                col_mask = mask[row_missing_chunk, col]
-                if not np.any(col_mask):
-                    # column has no missing values
-                    continue
-
-                potential_donors_idx, = np.nonzero(non_missing_fix_X[:, col])
-
-                # receivers_idx are indices in X
-                receivers_idx = row_missing_chunk[np.flatnonzero(col_mask)]
-
-                # distances for samples that needed imputation for column
-                dist_subset = (dist_chunk[dist_idx_map[receivers_idx] - start]
-                               [:, potential_donors_idx])
-
-                # receivers with all nan distances impute with mean
-                all_nan_dist_mask = np.isnan(dist_subset).all(axis=1)
-                all_nan_receivers_idx = receivers_idx[all_nan_dist_mask]
-
-                if all_nan_receivers_idx.size:
-                    col_mean = np.ma.array(self._fit_X[:, col],
-                                           mask=mask_fit_X[:, col]).mean()
-                    X[all_nan_receivers_idx, col] = col_mean
-
-                    if len(all_nan_receivers_idx) == len(receivers_idx):
-                        # all receivers imputed with mean
-                        continue
-
-                    # receivers with at least one defined distance
-                    receivers_idx = receivers_idx[~all_nan_dist_mask]
-                    dist_subset = (dist_chunk[dist_idx_map[receivers_idx]
-                                              - start]
-                                   [:, potential_donors_idx])
-
-                n_neighbors = min(self.n_neighbors, len(potential_donors_idx))
-                value = self._calc_impute(
-                    dist_subset,
-                    n_neighbors,
-                    self._fit_X[potential_donors_idx, col],
-                    mask_fit_X[potential_donors_idx, col])
-                X[receivers_idx, col] = value
-
-        # process in fixed-memory chunks
-        gen = pairwise_distances_chunked(
-            X[row_missing_idx, :],
-            self._fit_X,
-            metric=self.metric,
-            missing_values=self.missing_values,
-            force_all_finite=force_all_finite,
-            reduce_func=process_chunk)
-        for chunk in gen:
-            # process_chunk modifies X in place. No return value.
-            pass
-
-        return super()._concatenate_indicator(X[:, valid_mask], X_indicator)
