@@ -46,7 +46,7 @@ def set_dtypes(data) :
     float_var += ["additives_n", "ingredients_from_palm_oil","ingredients_from_palm_oil_n"]
     float_var = data.columns.intersection(float_var).values
     data[float_var] = data[float_var].astype("float")
-
+    
     ## CATEGORY
     data["creator"] = data[["creator","nutrition-score-fr_100g"]].astype("category")
     return(data)
@@ -78,3 +78,41 @@ def extract_irreg_errors_val(colname,possible_values, data):
             print(sum(data[colname].isna()),"missing values")
     print(len(outliers_val), "item values out of the intervall", possible_values)
     return outliers_val
+
+##
+## Duplicates treatment
+##
+
+from sklearn.metrics.pairwise import nan_euclidean_distances
+from sklearn import preprocessing
+
+from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.cluster.hierarchy import ClusterWarning
+from warnings import simplefilter
+simplefilter("ignore", ClusterWarning)
+
+def get_index_merge_duplicates(data, float_var, threshold_clustering = 1.15):
+    ## return a dict of indexes to merge, with key = product_name + cluster
+    
+    ## std var by var :
+    data_float = data[float_var].copy()
+    data_float.at[:,:] = preprocessing.StandardScaler().fit_transform(data_float)
+
+    res = {}
+
+    products = data["product_name"].drop_duplicates()
+    for prod_name in products : 
+        x = data[data.product_name == prod_name]
+        prod_index =  x.index
+
+        ## if there is more than one product with the same name 
+        if len(prod_index) > 1 : 
+            prod_values = data_float.loc[prod_index,:]
+            prod_dist = pd.DataFrame(nan_euclidean_distances(prod_values),
+                                  columns=prod_index, index = prod_index)
+            Z = linkage(prod_dist, "weighted")
+            prod_clustering = pd.Series(fcluster(Z, t=threshold_clustering), index = prod_index)
+            for k in np.unique(prod_clustering.values):
+                index_merge = prod_clustering[prod_clustering==k].index
+                res[prod_name+str(k)]= index_merge
+    return(res)
