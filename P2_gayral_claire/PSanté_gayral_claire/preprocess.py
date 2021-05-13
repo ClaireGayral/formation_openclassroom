@@ -21,6 +21,7 @@ def preprocess_drop_col_nan(df, nan_threshold):
     nan_repartition = df.isna().sum(axis=0)
     df = df.drop(df.columns[nan_repartition>nan_threshold], axis = 1)
     return(df)
+
 ##
 ## select variables : 
 ## 

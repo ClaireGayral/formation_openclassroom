@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 energy_var =  ['energy-kj_100g', 'energy-kcal_100g', 'energy_100g',
                'fat_100g','saturated-fat_100g']
@@ -98,7 +99,7 @@ def help_to_set_outliers_vals(df, colname, possible_vals):
     # plot values : 
     ax = fig.add_subplot(1,3,3)
     ax.plot(np.sort(data[colname]))
-    return( outliers )
+    return( np.array(outliers) )
 
 def rescale_outliers100g_val(data,possible_val_dict = possible_val_dict, concerned_var = var_rescale_100g):
     # from the hyp that the variable has been entered in mg instead of g -> rescale 
