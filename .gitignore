@@ -3,7 +3,7 @@ __MACOSX/
 data/
 *.zip
 brouillons_et_tests/
-
+res/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
