@@ -114,5 +114,44 @@ def get_index_merge_duplicates(data, float_var, threshold_clustering = 1.15):
             prod_clustering = pd.Series(fcluster(Z, t=threshold_clustering), index = prod_index)
             for k in np.unique(prod_clustering.values):
                 index_merge = prod_clustering[prod_clustering==k].index
+#                 if len(index_merge) > 1 :
+#                     res[prod_name+str(k)]= index_merge
                 res[prod_name+str(k)]= index_merge
     return(res)
+
+def drop_and_merge_duplicates(data):
+    data_clean = data.copy()
+    for product_name in res:
+        merge_index = res[product_name]
+        first_index = merge_index[0]
+        if len(merge_index)>1:
+            prod_duplicate = data.loc[merge_index].mean()
+            prod_duplicate.at["product_name"] = product_name[:-1] # original name
+            data_clean = data_clean.drop(merge_index.values, axis=0) 
+            data_clean.at[first_index] = prod_duplicate
+            data_clean.loc[first_index]
+    return(data_clean)
+
+
+##
+## Plot heatmap of distance 
+##
+
+import seaborn as sns
+
+def plot_heatmap_dist(prod_dist):
+    # index_sort = prod_dist[prod_dist.sum()==prod_dist.sum().min()].index[0]
+    index_sort = prod_dist.sum().sort_values().index.values
+    tmp = prod_dist.loc[index_sort,index_sort]
+    ax = sns.heatmap(
+    #     (prod_dist>1).sort_values(by = index_sort).sort_values(by = index_sort, axis = 1),
+        tmp,
+        vmin=0, vmax=1, center=0.5,
+        cmap=sns.diverging_palette(20, 220, n=200),
+        square=True
+    )
+    ax.set_xticklabels(
+        ax.get_xticklabels(),
+        rotation=45,
+        horizontalalignment='right')
+    plt.show()
