@@ -2,6 +2,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from sklearn import model_selection 
+from sklearn import preprocessing
+from sklearn import neighbors
+from sklearn.impute import KNNImputer
+
+
+##
+## Drop outliers
+## 
+
 energy_var =  ['energy-kj_100g', 'energy-kcal_100g', 'energy_100g',
                'fat_100g','saturated-fat_100g']
 
@@ -119,7 +129,7 @@ def drop_outliers(data, possible_val_dict = possible_val_dict):
         data.at[is_outlier, colname] = np.nan
     ## drop product with more than less than the median of missing values
     nan_repartition_row = data.isna().sum(axis=1)
-    threshold_row = nan_repartition_row.mean()
+    threshold_row = nan_repartition_row.quantile(0.75)#mean()
     dropped_products = nan_repartition_row[nan_repartition_row>threshold_row].index
     data = data.drop(dropped_products, axis = 0)
 
@@ -131,3 +141,98 @@ def drop_outliers(data, possible_val_dict = possible_val_dict):
     data = data.drop(dropped_variables, axis = 1)
     return(data)
 
+
+##
+## Missing value inference
+## 
+
+dropna = True
+
+def my_mean(y) : 
+    return np.mean(y[~np.isnan(y)])
+
+def my_norm2(x,y, dropna = False):
+    res = (x - y)**2
+    if dropna : 
+        res = res[~np.isnan(res)]
+    res = np.sum(res)
+    return np.sqrt(res)
+    
+def my_r2score(pred, target, dropna=False):
+    SSR = my_norm2(pred, target, dropna)
+    SST = my_norm2(target, my_mean(target),dropna)
+    return 1 - SSR / SST 
+
+def define_drop_index(shape,drop_proportion) : 
+    return np.random.choice([True,False], size = shape, p=[drop_proportion,1-drop_proportion])
+
+# index_to_drop = define_drop_index(X.shape,0.3)
+
+def get_missing_flat(X, index_to_drop):
+    # X is pd.DataFrame
+    # index_to_drop is the result of define_drop_index
+    # returns the vector (from flat) of the dropped data  
+    flat_drop_index = index_to_drop.flatten()
+    return X.values.flatten()[flat_drop_index]
+    
+## EXTRACT X_train, y_train and y_pred FROM X AND index_to_drop : 
+def drop_from_index(X, index_to_drop): 
+    # X is pd.DataFrame
+    # index_to_drop is the result of define_drop_index
+    # returns the pd.DataFrame X with dropped data
+    ## drop :
+    train = X.copy() 
+    train.values[index_to_drop]= np.nan 
+    return train 
+
+## an example of use : 
+# train = drop_from_index(X, index_to_drop)
+# flat_target = get_missing_flat(X, index_to_drop)
+# my_meth = KNNImputer()
+# pred = my_meth.fit_transform(train)
+# pred = pd.DataFrame(pred, index = X.index, columns = X.columns)
+# flat_pred = get_missing_flat(pred, index_to_drop)
+
+
+
+def launch_my_pseudo_CV(X,my_meth,param_grid, cv = 5):
+    ## MAP THE DICT OF LIST INTO LIST OF DICT :
+    param_dirg = model_selection.ParameterGrid(param_grid)
+
+    ## INITIALIZATION : 
+    res = {} # dict of dict 
+    for kwargs in param_dirg :
+        params_set = "_".join(str(val) for val in kwargs.values())
+        res[params_set]={}
+
+    ## SET FOLDS : they are not folds, but repetition of the procedure
+    ### LOOP ON FOLDS :
+    for k_iter in range(cv) : 
+        index_to_drop = define_drop_index(X.shape,0.3)   
+        train = drop_from_index(X, index_to_drop)
+        flat_target = get_missing_flat(X, index_to_drop)
+        
+        ### LOOP ON PARAM NAMES (HERE ONLY 1)
+        fold_key = "fold"+str(k_iter)
+        for kwargs in param_dirg :
+            ## SET PARAMS IN METH :
+            CV_meth = my_meth(**kwargs)
+            ## PREDICT MISSING VALUES : 
+            pred = CV_meth.fit_transform(train)
+            pred = pd.DataFrame(pred, index = X.index, columns = X.columns)
+            flat_pred = get_missing_flat(pred, index_to_drop)
+            y_table = pd.DataFrame(np.matrix((flat_pred, flat_target)).T, columns=["pred","real"])
+            ## SAVE :             
+            params_set = "_".join(str(val) for val in kwargs.values())
+            res[params_set][fold_key] = y_table
+    return res
+
+### INTEGRATING SCORES ON TABLE :
+def compute_MSE(table):
+    return my_norm2(table.real,table.pred)
+
+def compute_dict_MSE(tables):
+    mse_vect = []
+    for key, value in tables.items():
+        mse_vect.append(compute_MSE(value))
+    return np.array(mse_vect)
