@@ -7,69 +7,30 @@ from sklearn import preprocessing
 from sklearn import neighbors
 from sklearn.impute import KNNImputer
 
+##
+## META DATA ## 
+##
+data_path = "/home/clairegayral/Documents/openclassroom/data/P3/"
+res_path = "/home/clairegayral/Documents/openclassroom/res/P3/"
+
+
+##
+## drop columns with too many missing values 
+##
+
+def preprocess_drop_col_nan(df, nan_threshold): 
+    # drop columns with more than "nan_threshold" missing values
+    nan_repartition = df.isna().sum(axis=0)
+    df = df.drop(df.columns[nan_repartition>nan_threshold], axis = 1)
+    return(df)
 
 ##
 ## Drop outliers
 ## 
 
-energy_var =  ['energy-kj_100g', 'energy-kcal_100g', 'energy_100g',
-               'fat_100g','saturated-fat_100g']
-
-var_rescale_100g = ['monounsaturated-fat_100g','polyunsaturated-fat_100g',
-                     'omega-3-fat_100g','omega-6-fat_100g', 'omega-9-fat_100g',
-                     'trans-fat_100g','cholesterol_100g','carbohydrates_100g',
-                     'sugars_100g','starch_100g','polyols_100g','fiber_100g', 
-                     'proteins_100g','casein_100g','serum-proteins_100g',
-                     'nucleotides_100g','sodium_100g','alcohol_100g',
-                     'vitamin-a_100g','vitamin-d_100g','vitamin-e_100g',
-                     'vitamin-k_100g','vitamin-c_100g','vitamin-b1_100g',
-                     'vitamin-b2_100g','vitamin-pp_100g','vitamin-b6_100g',
-                     'vitamin-b9_100g','vitamin-b12_100g','biotin_100g',
-                     'pantothenic-acid_100g', 'silica_100g','bicarbonate_100g',
-                     'potassium_100g','chloride_100g','calcium_100g',
-                     'phosphorus_100g', 'iron_100g','magnesium_100g',
-                     'zinc_100g','copper_100g', 'manganese_100g',
-                     'fluoride_100g', 'selenium_100g','chromium_100g',
-                      'molybdenum_100g','iodine_100g', 'caffeine_100g',
-                     'taurine_100g', 'ph_100g','fruits-vegetables-nuts_100g']
+var_rescale_100g = ["colname"]
                         
-possible_val_dict = { # var_rescale_100g
-                     'monounsaturated-fat_100g':[0,100],
-                     'polyunsaturated-fat_100g':[0,100],
-                     'omega-3-fat_100g':[0,100], 'omega-6-fat_100g':[0,100],
-                     'omega-9-fat_100g':[0,100], 'trans-fat_100g':[0,100], 
-                     'cholesterol_100g':[0,100],'carbohydrates_100g':[0,100],
-                     'sugars_100g':[0,100], 'starch_100g':[0,100], 
-                     'polyols_100g':[0,100],'fiber_100g':[0,100], 
-                     'proteins_100g':[0,100], 'casein_100g':[0,100],
-                     'serum-proteins_100g':[0,100], 'nucleotides_100g':[0,100],
-                     'sodium_100g':[0,100],'alcohol_100g':[0,100], 
-                     'vitamin-a_100g':[0,1], 'vitamin-d_100g':[0,1],
-                     'vitamin-e_100g':[0,1], 'vitamin-k_100g':[0,1],
-                     'vitamin-c_100g':[0,1],'vitamin-b1_100g':[0,1],
-                     'vitamin-b2_100g':[0,1], 'vitamin-pp_100g':[0,1],
-                     'vitamin-b6_100g':[0,1], 'vitamin-b9_100g':[0,1],
-                     'vitamin-b12_100g':[0,1],'biotin_100g':[0,100],
-                     'pantothenic-acid_100g':[0,10], 'silica_100g':[0,100],
-                     'bicarbonate_100g':[0,10], 'potassium_100g':[0,100],
-                     'chloride_100g':[0,100],'calcium_100g':[0,100],
-                     'phosphorus_100g':[0,100], 'iron_100g':[0,100],
-                     'magnesium_100g':[0,100],'zinc_100g':[0,100],
-                     'copper_100g':[0,100], 'manganese_100g':[0,100],
-                     'fluoride_100g':[0,100], 'selenium_100g':[0,100], 
-                     'chromium_100g':[0,100], 'molybdenum_100g':[0,100], 
-                     'iodine_100g':[0,100], 'caffeine_100g':[0,100], 
-                     'taurine_100g':[0,100], 'ph_100g':[0,100],
-                     'fruits-vegetables-nuts_100g':[0,100],
-                      # energy_var : 
-                     'energy-kj_100g':[0,25000],
-                     'energy-kcal_100g':[0,5000], 'energy_100g':[0,30000],
-                     'fat_100g':[0,100], 'saturated-fat_100g':[0,100],
-                      # other
-                     'additives_n':[0,35], 'ingredients_from_palm_oil': [0,1],
-                     'carbon-footprint_100g':[0,5000],
-                     'nutrition-score-fr_100g':[-20,50],'nutrition-score-uk_100g':[-5,25]}
-
+possible_val_dict = { "colname1":"list_of_possible_values1", "colname2":"list_of_possible_values2"}
 
 def extract_irreg_errors_val(colname,possible_values, data):
     outliers_val = []
@@ -111,6 +72,7 @@ def help_to_set_outliers_vals(df, colname, possible_vals):
     ax.plot(np.sort(data[colname]))
     return( np.array(outliers) )
 
+## divide by 1000 outliers (hyp : pb of units)
 def rescale_outliers100g_val(data,possible_val_dict = possible_val_dict, concerned_var = var_rescale_100g):
     # from the hyp that the variable has been entered in mg instead of g -> rescale 
     # count_rescaled = pd.Series(np.zeros(len(data.columns)),index = data.columns)
@@ -143,7 +105,7 @@ def drop_outliers(data, possible_val_dict = possible_val_dict):
 
 
 ##
-## Missing value inference
+## Missing value inference with KNN impute
 ## 
 
 dropna = True
@@ -227,6 +189,41 @@ def launch_my_pseudo_CV(X,my_meth,param_grid, cv = 5):
             res[params_set][fold_key] = y_table
     return res
 
+def plot_MSE_scores_KNN_impute(res,param_grid,fig_name=None) :
+    MSE_mean = []
+    MSE_std = []
+
+    for params_set in res.keys(): 
+        dict_y_table = res[params_set]
+
+        MSE = compute_dict_MSE(dict_y_table)
+        MSE_mean.append(MSE.mean())
+        MSE_std.append(MSE.std())
+
+    params = []
+    for kwargs in model_selection.ParameterGrid(param_grid) :
+        params.append(kwargs)
+
+    CV_results_ = {"params": params , "mean_MSE_score":MSE_mean, "std_MSE_score":MSE_std}
+
+    iterator = zip(CV_results_["mean_MSE_score"], CV_results_["std_MSE_score"], CV_results_["params"])
+    for mean, std, params in iterator:
+        print("MSE = %0.3f (+/-%0.3f) for %s" %(mean, 2*std, params))
+
+    fig, ax = plt.subplots()
+    ax.errorbar(x=param_grid["n_neighbors"], y=np.array(CV_results_["mean_MSE_score"]),
+                xerr=0, yerr=np.array(CV_results_["std_MSE_score"]))
+    plt.xlabel("Number of neighbors")
+    plt.ylabel("MSE")
+    plt.title("MSE score on different n neighbors")
+    if fig_name is not None : 
+        plt.savefig(res_path+"figures/"+fig_name)
+    plt.show()
+    
+
+
+
+
 ### INTEGRATING SCORES ON TABLE :
 def compute_MSE(table):
     return my_norm2(table.real,table.pred)
@@ -236,3 +233,8 @@ def compute_dict_MSE(tables):
     for key, value in tables.items():
         mse_vect.append(compute_MSE(value))
     return np.array(mse_vect)
+    
+
+    
+    
+
