@@ -18,21 +18,61 @@ def plot_hist_y(y,fig_name = None):
         plt.savefig(res_path+"figures/"+fig_name)
     plt.show()
 
-def plot_multi_hist(data, list_of_var, x_rotate = False, figsize=(15, 20), fig_name=None) : 
-    nb_line_plot = int(np.floor(len(list_of_var)/4)+1)
-    fig = plt.figure(figsize=(15, 20))
+def repartition_and_hist(data,var,figsize=(10,5)):
+    # data = pd.DataFrame
+    # var = colname in data
 
+    tmp = data.loc[~data[var].isna(), var]
+
+    plt.figure(figsize=figsize)
+    ## sorted plot
+    plt.subplot(1,2,1)
+    plt.plot(range(len(tmp)),tmp.sort_values())
+    plt.xticks(rotation='vertical')
+
+    plt.title(var)
+    ## hist 
+    plt.subplot(1,2,2)
+    nb_bins = len(np.unique(tmp.values))
+    plt.hist(tmp, bins=nb_bins, color='steelblue', edgecolor='none')
+    plt.xticks(rotation='vertical')
+    plt.title("Histogram of "+tmp.name)
+plt.show()
+
+# def plot_multi_hist(data, list_of_var, x_rotate = False, figsize=(18, 20), fig_name=None) : 
+#     nb_line_plot = int(np.floor(len(list_of_var)/4)+1)
+#     fig = plt.figure(figsize=figsize)
+
+#     fig_count = 1
+#     for var in list_of_var :#data.columns.intersection(list_of_nutri_facts):
+#         ax = fig.add_subplot(nb_line_plot,4, fig_count)
+#         nb_bins = min(20, len(np.unique(data[var].dropna().values)))
+#         ax.hist(data[var], bins = nb_bins, density=True, edgecolor='none')
+#         ax.set_title(var)
+#         fig_count += 1
+#     if fig_name is not None :
+#         plt.savefig(res_path+"figures/"+fig_name)
+#     plt.show()
+    
+    
+def plot_multi_hist(data, list_of_var, x_rotate = False, figsize=(18, 20), fig_name=None) : 
+    nb_line_plot = int(np.floor(len(list_of_var)/4)+1)
+    fig = plt.figure(figsize=figsize)
     fig_count = 1
-    for var in list_of_var :#data.columns.intersection(list_of_nutri_facts):
+    for var in data.columns.intersection(list_of_var) :#data.columns.intersection(list_of_nutri_facts):
         ax = fig.add_subplot(nb_line_plot,4, fig_count)
         nb_bins = min(20, len(np.unique(data[var].dropna().values)))
-        ax.hist(data[var], bins = nb_bins, density=True, edgecolor='none')
+        ax.hist(data[var], bins = nb_bins, density=True, edgecolor='none',
+                   orientation = "vertical")
+        if type(data[var].values[0])==str :
+            plt.xticks(rotation='vertical')
         ax.set_title(var)
         fig_count += 1
-        
     if fig_name is not None :
         plt.savefig(res_path+"figures/"+fig_name)
     plt.show()
+
+    
 
 ## lorenz curve : 
 def plot_lorenz_curve(y):
