@@ -18,7 +18,21 @@ def plot_hist_y(y,fig_name = None):
         plt.savefig(res_path+"figures/"+fig_name)
     plt.show()
 
+def plot_multi_hist(data, list_of_var, x_rotate = False, figsize=(15, 20), fig_name=None) : 
+    nb_line_plot = int(np.floor(len(list_of_var)/4)+1)
+    fig = plt.figure(figsize=(15, 20))
 
+    fig_count = 1
+    for var in list_of_var :#data.columns.intersection(list_of_nutri_facts):
+        ax = fig.add_subplot(nb_line_plot,4, fig_count)
+        nb_bins = min(20, len(np.unique(data[var].dropna().values)))
+        ax.hist(data[var], bins = nb_bins, density=True, edgecolor='none')
+        ax.set_title(var)
+        fig_count += 1
+        
+    if fig_name is not None :
+        plt.savefig(res_path+"figures/"+fig_name)
+    plt.show()
 
 ## lorenz curve : 
 def plot_lorenz_curve(y):
