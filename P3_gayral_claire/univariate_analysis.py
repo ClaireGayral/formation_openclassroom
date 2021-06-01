@@ -55,13 +55,15 @@ plt.show()
 #     plt.show()
     
     
-def plot_multi_hist(data, list_of_var, x_rotate = False, figsize=(18, 20), fig_name=None) : 
+def plot_multi_hist(data, list_of_var=None, x_rotate = False, figsize=(18, 20), fig_name=None) : 
+    if list_of_var is None :
+        list_of_var = data.columns
     nb_line_plot = int(np.floor(len(list_of_var)/4)+1)
     fig = plt.figure(figsize=figsize)
     fig_count = 1
     for var in data.columns.intersection(list_of_var) :#data.columns.intersection(list_of_nutri_facts):
         ax = fig.add_subplot(nb_line_plot,4, fig_count)
-        nb_bins = min(20, len(np.unique(data[var].dropna().values)))
+        nb_bins = min(30, max(10, len(np.unique(data[var].dropna().values))))
         ax.hist(data[var], bins = nb_bins, density=True, edgecolor='none',
                    orientation = "vertical")
         if type(data[var].values[0])==str :
