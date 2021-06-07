@@ -29,6 +29,9 @@ numerical_var = ["NumberofFloors","PropertyGFATotal",
                  'Electricity(kBtu)', 'NaturalGas(therms)',
                  'NaturalGas(kBtu)', 'OtherFuelUse(kBtu)',
                  'GHGEmissions(MetricTonsCO2e)', 'GHGEmissionsIntensity(kgCO2e/ft2)',
+                 ## added var :
+                 "CO2_emissions", "CO2_emissions_intensity",
+                 "age_of_building",
                  ]
 
 categorical_var = ["CouncilDistrictCode",# in [1,7]
@@ -41,6 +44,7 @@ categorical_var = ["CouncilDistrictCode",# in [1,7]
                    "PrimaryPropertyType", # txt
                    "Neighborhood", # txt
                    'ComplianceStatus', # "Not Compliant","Compliant"
+                   'LargestPropertyUseType'
                    ]
 
 identification_var = ["OSEBuildingID", "DataYear","PropertyName",
@@ -76,6 +80,5 @@ unclassified = ["PropertyName", # txt
 
 def select_columns(df, list_of_var):
     return(df[df.columns.intersection(list_of_var)])
-
 
 
