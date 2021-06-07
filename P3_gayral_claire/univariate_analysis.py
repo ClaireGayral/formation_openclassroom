@@ -70,10 +70,11 @@ def plot_multi_hist(data, list_of_var=None, x_rotate = False, figsize=(18, 20), 
             plt.xticks(rotation='vertical')
         ax.set_title(var)
         fig_count += 1
+        plt.tight_layout()
     if fig_name is not None :
         plt.savefig(res_path+"figures/"+fig_name)
     plt.show()
-
+    
     
 
 ## lorenz curve : 
