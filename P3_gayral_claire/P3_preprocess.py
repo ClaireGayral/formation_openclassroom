@@ -40,6 +40,7 @@ categorical_var = ["CouncilDistrictCode",# in [1,7]
                    "City Council Districts", # in [1,2]
                    "SPD Beats",# in [1,51]
                    "Zip Codes",# in [1,7]
+                   "ZipCode",## in 2016 data
                    "BuildingType", # txt
                    "PrimaryPropertyType", # txt
                    "Neighborhood", # txt
@@ -59,7 +60,7 @@ unclassified = ["PropertyName", # txt
                 "ListOfAllPropertyUseTypes"
                 'LargestPropertyUseTypeGFA','SecondLargestPropertyUseTypeGFA', 'ThirdLargestPropertyUseTypeGFA'
                 'LargestPropertyUseType', 'SecondLargestPropertyUseType','ThirdLargestPropertyUseType',
-                'YearsENERGYSTARCertified','Comment',
+                'YearsENERGYSTARCertified','Comment','Comments'
                 'DefaultData', # "yes","no"
                 'Outlier', # 'High Outlier', 'Low Outlier'
                 ]
