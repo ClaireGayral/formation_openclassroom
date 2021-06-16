@@ -139,12 +139,82 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
                   color = "black", linestyle="dashed", label="best_alpha")
     ## LEGEND :
     if var_names is not None :
-        ax.legend(np.concatenate((np.array(var_names),['best alpha'])),
-                   title = "Variables :", loc = "center right")
+        ax.legend(np.concatenate((np.array(var_names),['best alpha'])), 
+                  title = "Variables :", 
+                  loc = "upper right",bbox_to_anchor=(1.5, 1))
     else : 
-        plt.legend(var_names, title = "Variables :")
+        plt.legend(var_names, title = "Variables :", 
+                   loc = "upper right", bbox_to_anchor=(1.5, 1))
     ax.set_xlabel("alpha")
     ax.set_ylabel("Coefficient Values")
     ax.set_title("Regularization paths")
     if fig_name is not None : 
         plt.savefig(res_path+"figures/"+fig_name+".jpg")
+        
+##
+## ANOVA PLOT 
+##
+
+my_color_set = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
+          "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
+          "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
+          "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
+          "pink":"#ff81c0","lavender":"#c79fef","neon red":"#ff073a",
+          "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
+          "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
+          "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
+         }.values()
+
+def plot_boxplot(data,modality_var, var, sort = False, fig_name = None):
+    groupes = []
+    group_mean = []
+    modalities = data[modality_var].values.categories
+    for m in modalities:
+        tmp = data[data[modality_var]==m][var]
+        groupes.append(tmp)
+        group_mean.append(tmp.mean())
+    ## sort by group values :
+    if sort == True : 
+        sort_index = np.argsort(group_mean)[::-1]
+        groupes = np.array(groupes, dtype="object")[sort_index]
+        modalities = modalities[sort_index]
+    # Propriétés graphiques 
+    medianprops = {'color':"black"}
+    meanprops = {'marker':'o', 'markeredgecolor':'black','markerfacecolor':'blue'}
+    fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(9,4))
+    # box plot : 
+    boxplot = ax.boxplot(groupes, labels=modalities, showfliers=False, medianprops=medianprops, 
+                vert=True, patch_artist=True, showmeans=True, meanprops=meanprops)
+    ax.set_title(str("Box plot "+var+" \nin " + modality_var +" modalities"))
+    # add color : 
+    if len(modalities) <25 : 
+        for patch, color in zip(boxplot['boxes'], my_color_set):
+            patch.set_facecolor(color)
+    ## horiz or vert labels ?
+#     max_len_label = max([len(modality) for modality in modalities])
+#     if max_len_label >10 :
+    if type(modalities[0]) == str :
+        plt.xticks(rotation='vertical')    
+    if fig_name is not None :
+        plt.savefig(res_path+"figures/"+fig_name)
+
+def eta_squared(x,y):
+    ## y = num array
+    ## x = categorical array
+    
+    ## drop nan individuals : 
+    nan_index = np.concatenate((x[x.isna()].index.values,
+                                y[y.isna()].index.values))
+    x = x.drop(nan_index)
+    y = y.drop(nan_index)
+    ## init 
+    moyenne_y = y.mean()
+    classes = []
+    ## loop on categories
+    for classe in x.unique():
+        yi_classe = y[x==classe]
+        classes.append({'ni': len(yi_classe),
+                        'moyenne_classe': yi_classe.mean()})
+    SCT = sum([(yj-moyenne_y)**2 for yj in y])
+    SCE = sum([c['ni']*(c['moyenne_classe']-moyenne_y)**2 for c in classes])
+    return SCE/SCT

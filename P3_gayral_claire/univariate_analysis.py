@@ -132,10 +132,8 @@ def plot_lorenz_curve(y):
     y_rescaled = y - min(y)
     lorenz = np.cumsum(np.sort(y_rescaled)) / y_rescaled.sum()
     lorenz = np.append([0],lorenz) # La courbe de Lorenz commence à 0
-
-    fig, ax = plt.subplots()
-
-    ax.axis('scaled')
+#     fig, ax = plt.subplots()
+#     ax.axis('scaled')
     xaxis = np.linspace(0-1/n,1+1/n,n+1) 
     plt.plot(xaxis,lorenz,drawstyle='steps-post')
     plt.xlim([-0.05, 1.05])
@@ -143,16 +141,15 @@ def plot_lorenz_curve(y):
     plt.plot([0,0],[-0.05,1.05], color="grey") # y axis 
     plt.plot([-0.05,1.05],[0,0], color="grey") # x axis
     plt.plot([-0.05,1.05],[-0.05,1.05], "--") # identity line
-
     plt.xlabel("Cumulative share of buildings")
     plt.ylabel("Cumulative share of score")
-    plt.title("Lorenz curve for the Energy Star score")
+    plt.title("Lorenz curve for "+y.name)
 
-    plt.show()
-
+    ## print AUC 
     AUC = (lorenz.sum() -lorenz[-1]/2 -lorenz[0]/2)/n # Surface sous la courbe de Lorenz. Le premier segment (lorenz[0]) est à moitié en dessous de 0, on le coupe donc en 2, on fait de même pour le dernier segment lorenz[-1] qui est à moitié au dessus de 1.
     S = 0.5 - AUC # surface entre la première bissectrice et le courbe de Lorenz
     gini = 2*S
-    print("gini =", gini)
-    print("AUC =", AUC)
+    print(y.name, ":")
+    print("\t gini =", gini)
+    print("\t AUC =", AUC)
 
