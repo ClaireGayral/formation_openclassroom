@@ -100,7 +100,8 @@ def compare_regressions(X_, y_, dict_lr_model, alpha_values, score_name="r2", fi
     plt.ylim([1.1*min(min_score.values())-0.05, 1.1*max(max_score.values())+0.05])
     plt.legend()
     if fig_name is not None : 
-        plt.savefig(res_path+"figures/"+fig_name+".jpg")
+        figname = fig_name + "compare_regression"
+        plt.savefig(res_path+"figures/"+figname+".jpg")
     return(res)
 
 def get_lm_score(X_,y_, X_test_std,y_test,dict_best_alpha):
@@ -114,7 +115,7 @@ def get_lm_score(X_,y_, X_test_std,y_test,dict_best_alpha):
         lr_model.set_params(alpha = alpha)
         lr_model.fit(X_,y_)
         y_pred = lr_model.predict(X_test_std)
-        res[lr_name]=metrics.r2_score(y_true = y_test, y_pred=y_pred)
+        res[lr_name]=metrics.r2_score(y_true = y_test, y_pred=y_pred, )
     return(res)
 
 
@@ -149,7 +150,46 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
     ax.set_ylabel("Coefficient Values")
     ax.set_title("Regularization paths")
     if fig_name is not None : 
-        plt.savefig(res_path+"figures/"+fig_name+".jpg")
+        figname = fig_name + "regul_paths_" + model_name + ".jpg" 
+        plt.savefig(res_path+"figures/"+figname+".jpg")
+        
+        
+
+def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20), 
+                          score_name= "r2", fig_name = None) : 
+    ## DROP MISSING VALUES IN y : 
+    drop_index = y[y.isna()].index
+    y_ = y.drop(drop_index, axis = 0)
+    X_ = X.drop(drop_index, axis = 0)
+    
+    ## SPLIT DATA 
+    X_train, X_test, y_train, y_test = train_test_split(X_, y_, train_size=0.8)
+
+    ## STANDARDIZE : 
+    from sklearn.preprocessing import StandardScaler
+    my_std = preprocessing.StandardScaler()
+    my_std.fit(X_train)
+    X_train_std = my_std.transform(X_train)
+    X_test_std = my_std.transform(X_test)
+
+    ## PLOTS :
+    ## plot set of regulation parameter 
+    plt.figure(figsize = figsize)
+    res = compare_regressions(X_train_std, y_train,
+                              dict_lr_model, alpha_values, 
+                              score_name, fig_name)
+    plt.show()
+    ## plot regulation paths
+    for model_name in dict_lr_model.keys():
+        print(model_name," : ")
+        plt.figure(figsize = figsize)
+        plot_regul_paths(alpha_values, lm_model = dict_lr_model[model_name], 
+                     X_ = X_train_std, y_ = y_train,
+                     var_names = X.columns, best_alpha = res.loc[model_name,"best_alpha"],
+                     fig_name = fig_name)
+        plt.show()
+    ## print results :
+    return(res)
         
 ##
 ## ANOVA PLOT 
