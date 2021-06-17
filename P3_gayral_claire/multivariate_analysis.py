@@ -7,6 +7,8 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn import linear_model
 from sklearn import model_selection
+from sklearn import preprocessing
+
 import time
 
 
@@ -156,7 +158,7 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
         
 
 def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20), 
-                          score_name= "r2", fig_name = None) : 
+                  score_name= "r2", figsize = (8,5), fig_name = None) : 
     ## DROP MISSING VALUES IN y : 
     drop_index = y[y.isna()].index
     y_ = y.drop(drop_index, axis = 0)
@@ -221,11 +223,10 @@ def plot_boxplot(data,modality_var, var, sort = False, fig_name = None):
     # Propriétés graphiques 
     medianprops = {'color':"black"}
     meanprops = {'marker':'o', 'markeredgecolor':'black','markerfacecolor':'blue'}
-    fig, ax = plt.subplots(nrows=1,ncols=1,figsize=(9,4))
     # box plot : 
-    boxplot = ax.boxplot(groupes, labels=modalities, showfliers=False, medianprops=medianprops, 
+    boxplot = plt.boxplot(groupes, labels=modalities, showfliers=False, medianprops=medianprops, 
                 vert=True, patch_artist=True, showmeans=True, meanprops=meanprops)
-    ax.set_title(str("Box plot "+var+" \nin " + modality_var +" modalities"))
+    plt.title(str("Box plot "+var+" \nin " + modality_var +" modalities"))
     # add color : 
     if len(modalities) <25 : 
         for patch, color in zip(boxplot['boxes'], my_color_set):
