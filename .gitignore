@@ -5,6 +5,9 @@ data/
 brouillons_et_tests/
 res/
 
+%% packages from github :
+copkmeans/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
