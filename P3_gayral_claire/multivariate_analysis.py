@@ -192,54 +192,14 @@ def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20),
         plt.show()
     ## print results :
     return(res)
-        
-##
-## ANOVA PLOT 
-##
 
-my_color_set = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
-          "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
-          "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
-          "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
-          "pink":"#ff81c0","lavender":"#c79fef","neon red":"#ff073a",
-          "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
-          "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
-          "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
-         }.values()
 
-def plot_boxplot(data,modality_var, var, sort = False, fig_name = None):
-    groupes = []
-    group_mean = []
-    modalities = data[modality_var].values.categories
-    for m in modalities:
-        tmp = data[data[modality_var]==m][var]
-        groupes.append(tmp)
-        group_mean.append(tmp.mean())
-    ## sort by group values :
-    if sort == True : 
-        sort_index = np.argsort(group_mean)[::-1]
-        groupes = np.array(groupes, dtype="object")[sort_index]
-        modalities = modalities[sort_index]
-    # Propriétés graphiques 
-    medianprops = {'color':"black"}
-    meanprops = {'marker':'o', 'markeredgecolor':'black','markerfacecolor':'blue'}
-    # box plot : 
-    boxplot = plt.boxplot(groupes, labels=modalities, showfliers=False, medianprops=medianprops, 
-                vert=True, patch_artist=True, showmeans=True, meanprops=meanprops)
-    plt.title(str("Box plot "+var+" \nin " + modality_var +" modalities"))
-    # add color : 
-    if len(modalities) <25 : 
-        for patch, color in zip(boxplot['boxes'], my_color_set):
-            patch.set_facecolor(color)
-    ## horiz or vert labels ?
-#     max_len_label = max([len(modality) for modality in modalities])
-#     if max_len_label >10 :
-    if type(modalities[0]) == str :
-        plt.xticks(rotation='vertical')    
-    if fig_name is not None :
-        plt.savefig(res_path+"figures/"+fig_name)
+##
+## ANOVA criteria
+##
 
 def eta_squared(x,y):
+
     ## y = num array
     ## x = categorical array
     
@@ -259,3 +219,303 @@ def eta_squared(x,y):
     SCT = sum([(yj-moyenne_y)**2 for yj in y])
     SCE = sum([c['ni']*(c['moyenne_classe']-moyenne_y)**2 for c in classes])
     return SCE/SCT
+        
+##
+## ANOVA PLOT 
+##
+
+my_color_set = list({ "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
+          "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
+          "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
+          "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
+          "pink":"#ff81c0","lavender":"#c79fef","neon red":"#ff073a",
+          "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
+          "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
+          "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
+         }.values())
+
+def sort_by_modality_mean(data, cat_var, num_var, sort):
+    
+    groups = []
+    group_mean = []
+    modalities = data[cat_var].values.categories
+    for m in modalities:
+        tmp = data[data[cat_var]==m][num_var]
+        groups.append(tmp)
+        group_mean.append(tmp.mean())
+    ## sort by group values :
+    if sort == True : 
+        sort_index = np.argsort(group_mean)[::-1]
+        groups = np.array(groups, dtype="object")[sort_index]
+        modalities = modalities[sort_index]
+    return(groups, modalities, sort_index)
+
+def plot_boxplot(data,cat_var, num_var, sort = False, fig_name = None, dict_color_mod={}):
+    
+    groups, modalities, sort_index = sort_by_modality_mean(data,cat_var,num_var,sort)
+    
+    # Propriétés graphiques 
+    medianprops = {'color':"black"}
+    meanprops = {'marker':'o', 'markeredgecolor':'black','markerfacecolor':'blue'}
+    # box plot : 
+    boxplot = plt.boxplot(groups, labels=modalities, showfliers=False, medianprops=medianprops, 
+                vert=True, patch_artist=True, showmeans=True, meanprops=meanprops)
+    plt.title(str("Box plot "+num_var+" \nin " + cat_var +" modalities"))
+    # add color : 
+    for i,patch in enumerate(boxplot['boxes']) :
+        mod = modalities[i]
+        if (dict_color_mod.get(mod)==None): 
+            color = "#6b8ba4"
+        else : 
+            color = dict_color_mod[mod]
+        patch.set_facecolor(color)
+        
+    if np.any([type(mod) == str for mod in modalities]) :
+        plt.xticks(rotation='vertical')    
+    if fig_name is not None :
+        plt.savefig(res_path+"figures/"+fig_name)
+
+def get_different_clustering_color(original,cluster):
+    dict_corresp_cluster_var = get_corresp_cluster_var(original, cluster)
+    dict_color_mod = {}
+    for i,list_var_in_cluster in enumerate(dict_corresp_cluster_var.values()):
+        color = my_color_set[i]
+        for var in list_var_in_cluster :
+            dict_color_mod[var] = color
+    return(dict_color_mod) 
+
+
+
+
+##
+## Cluster categorical vars w.r.t a numerical subspace
+##
+
+from copkmeans.cop_kmeans import cop_kmeans
+
+########### inspired from https://stats.stackexchange.com/questions/90769/using-bic-to-estimate-the-number-of-k-in-kmeans
+from scipy.spatial import distance
+
+def compute_clustering_criterion(clusters,centers,Y):
+    """
+    Computes the AIC and BIC metric for a given clusters
+    
+    Parameters:
+    -----------------------------------------
+    kmeans:  List of clustering object from scikit learn
+    Y     :  multidimension np array of data points
+    
+    Returns:
+    -----------------------------------------
+    AIC,BIC value
+    """
+    #number of clusters
+    K = max(clusters)+1
+    # size of the clusters
+    d = np.bincount(clusters)
+    #size of data set
+    n, p = Y.shape
+    #compute variance for all clusters beforehand
+#     cl_var = (1.0 / (N - K) / d) * 
+    #sum of squared distances of samples to their closest cluster center
+    inertia = float(sum([sum(distance.cdist(Y.values[np.where(clusters == i)], [centers[i]], 
+             'euclidean')**2) for i in range(K)]))
+#     const_term = 0.5 * m * np.log(N) * (d+1)
+    AIC = float(inertia + 2*k*p)
+    BIC = float(inertia + 2*np.log(n)*k*p)
+    return(AIC,BIC)
+
+
+def get_must_link(x):
+    """
+    Loop on categories to extract the pair of element that 
+        should be in the same cluster
+    
+    Parameters:
+    -----------------------------------------
+    x: pd.Series(dtypes="category")
+    
+    Returns:
+    -----------------------------------------
+    list of 2-tuple 
+    """
+    must_link = []
+    for category in x.cat.categories :
+        group_index = x[x==category].index
+        for element in group_index : 
+            group_index = group_index.drop(element)
+            for element2 in group_index :
+                must_link.append((element,element2))
+    return(must_link)
+
+def cluster_categories(x,Y, k=5, must_link=None):
+    """
+    Computes the COP-Kmeans 
+    
+    Parameters:
+    -----------------------------------------
+    x : pd.Series(dtypes="category")
+    Y : pd.Dataframe of data points (numerical)
+    k : number of cluster 
+    must_link : list of 2-tuple, if None, call get_must_link(x)
+    
+    Returns:
+    -----------------------------------------
+    clusters, centers in np.arrays
+    """
+    ## construction of input matrices : 
+    input_matrix = Y.values
+    ## list of tuple corresponding to the links we must keep : 
+    if must_link is None :
+        must_link = get_must_link(x) 
+    ## launch cop kmeans : 
+    clusters, centers = cop_kmeans(dataset=input_matrix, k=k, ml=must_link)
+    clusters = np.array(clusters)
+    centers = np.array(centers)
+    return(clusters, centers)
+
+#     res = data[num_vars].copy()
+#     res.at[:,cat_var] = clusters
+#     res[cat_var] = res[cat_var].astype("category")
+#     return(res)
+
+def loop_on_cat_var_cluster_category(data, num_vars, list_of_cat_var) : 
+    """
+    Computes the COP-Kmeans for different k on the categorical variables
+    
+    Parameters:
+    -----------------------------------------
+    data : pd.Dataframe 
+    num_vars : list of numerical vars names (str) to use in Y
+    list_of_cat_var : list of categorical vars name (str) to loop on
+    
+    Save in a file :
+    -----------------------------------------
+    AIC and BIC for multiple k
+    """
+    Y = data_log_transfo[num_vars]
+    
+    for cat_var in list_of_cat_var :
+        x = data[cat_var]
+        must_link = get_must_link(data[cat_var])
+        min_k = 2
+        K = len(data[cat_var].cat.categories)
+        if (K>10) :
+            max_k = int(np.floor(K)/2)
+        
+        else : 
+            max_k = K
+        cluster_criterion = pd.DataFrame(columns=["AIC","BIC"], 
+                                         index = ["k_"+str(k) for k in range(min_k, max_k)],
+                                         dtype=float)
+        for k in range(min_k, max_k) :
+            clusters, centers = cluster_categories(x,Y, k=k, must_link = must_link)
+            cluster_criterion.at["k_"+str(k),:] = compute_bic(clusters,centers, Y)
+        cluster_criterion.to_csv(res_path+"set_k_cluster_category_"+ cat_var +".csv")
+        
+def compare_boxplots_clustered_category(res_cluster, data,  cat_var, num_var = "CO2_emissions", 
+                                    figsize = (20,15)) :
+    """
+    plot 2 boxplots to compare before and after clustering categories
+    
+    Parameters:
+    -----------------------------------------
+    res_cluster, data : pd.Dataframe 
+    cat_var, num_var : str, resp. categorical and numerical vars names
+    
+    Returns:
+    -----------------------------------------
+    2 plt.subplot 
+    """
+    plt.figure(figsize=figsize)
+    plt.subplot(1,2,1)
+    plot_boxplot(data, cat_var, num_var,sort=True)
+    eta2 = eta_squared(x=data[cat_var], y=data[num_var])
+    print(cat_var, "original : eta² =",np.round(eta2,2))
+
+    plt.subplot(1,2,2)
+    plot_boxplot(res_cluster,cat_var, num_var ,sort=True)
+    eta2 = eta_squared(x=res_cluster[cat_var], y=res_cluster[num_var])
+    print(cat_var, "clustered : eta² =",np.round(eta2,2))
+    
+    
+def get_different_clustering_color(original,cluster):
+    """
+    extract a dictionnary of colors associated to each cluster, 
+    color variables in the same cluster
+    
+    Parameters:
+    -----------------------------------------
+    original, cluster : pd.Dataframe 
+    
+    Returns:
+    -----------------------------------------
+    dictionnary of variables(keys) and colors (values)
+    """
+    dict_corresp_cluster_var = get_corresp_cluster_var(original, cluster)
+    dict_color_mod = {}
+    for i, clust_k in enumerate(dict_corresp_cluster_var.keys()):
+        list_var_in_cluster = dict_corresp_cluster_var[clust_k]
+        color = my_color_set[i]
+        for var in list_var_in_cluster :
+            dict_color_mod[var] = color
+        dict_color_mod[clust_k] = color
+    return(dict_color_mod) 
+
+def compare_boxplots_clustered_category_COPkmeans(res_cluster, data,  
+                                                  cat_var, num_var = "CO2_emissions", 
+                                                  figsize = (20,15)) :
+    """
+    plot 2 boxplots to compare before and after clustering categories with cop-kmeans
+    
+    Parameters:
+    -----------------------------------------
+    res_cluster, data : pd.Dataframe 
+    cat_var, num_var : str, resp. categorical and numerical vars names
+    
+    Returns:
+    -----------------------------------------
+    2 plt.subplot 
+    """
+    original = data[cat_var]
+    cluster = res_cluster[cat_var]
+    ## get colors : 
+    dict_color_mod = get_different_clustering_color(original,cluster)
+    
+    plt.figure(figsize=figsize)
+    plt.subplot(1,2,1)
+    plot_boxplot(data, cat_var, num_var,sort=True, dict_color_mod = dict_color_mod)
+    eta2 = eta_squared(x=data[cat_var], y=data[num_var])
+    print(cat_var, "original : eta² =",np.round(eta2,2))
+
+    plt.subplot(1,2,2)
+    plot_boxplot(res_cluster,cat_var, num_var, sort=True, dict_color_mod = dict_color_mod)
+    eta2 = eta_squared(x=res_cluster[cat_var], y=res_cluster[num_var])
+    print(cat_var, "clustered : eta² =",np.round(eta2,2))
+    
+    
+def get_corresp_cluster_var(original,cluster):
+    """
+    From a COP-Kmeans clustering, get the original variable names in each cluster
+    
+    Parameters:
+    -----------------------------------------
+    original : 
+    cluster : 
+    
+    Returns : 
+    -----------------------------------------
+    dictionnary s.t. keys = cluster names, values = list of original categorical variables
+    """
+    ## drop missing values ?
+    drop_index = original[original.isna()].index
+    original = original.drop(drop_index, axis = 0)
+    cluster = cluster.drop(drop_index, axis = 0)
+    
+    dict_corresp_cluster_var={}
+    for clust_k in cluster.cat.categories: 
+        clust_index = cluster[cluster==clust_k].index
+        dict_corresp_cluster_var[clust_k] = np.unique(original[clust_index].values)
+        
+    return(dict_corresp_cluster_var)
+
