@@ -38,6 +38,48 @@ def plot_heatmap_dist(row_dist):
 ## Linear Regression  
 ##
 
+from multivariate_analysis import *
+from sklearn.model_selection import RepeatedKFold
+
+X_ = X_std.copy()
+y_ = y_std["SiteEnergyUse(kBtu)"].copy()
+my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
+cv = 5
+def pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5):
+    ## init
+    k = 1
+    res = {} # dict of dict 
+    kf = RepeatedKFold(n_splits = cv, n_repeats=1)
+    ## loop on folds
+    for train_range_index, test_range_index in kf.split(X = X_.values, y = y_.values) : 
+        train_index = y_.index[train_range_index].values
+        test_index = y_.index[test_range_index].values
+
+        ## GET X and y SPLIT : 
+        CV_X_train, CV_X_test = X_.loc[train_index,:], X_.loc[test_index,:]
+        CV_y_train, CV_y_test = y_.loc[train_index], y_.loc[test_index]
+
+        fold_key = "fold"+str(k)
+        k+=1
+
+        my_meth.fit(CV_X_train,CV_y_train) 
+        y_pred = my_meth.predict(CV_X_test)
+        y_table = pd.DataFrame(np.matrix((y_pred, CV_y_test)).T, columns=["pred","real"])
+        res[fold_key] = y_table
+    return(res)
+
+from sklearn import metrics
+def compute_R2(table):
+    return(metrics.r2_score(y_true = table.real, y_pred=table.pred))
+
+def get_score_from_pseudo_CV(dict_y_table, cv = 5):
+    score = []
+#     dict_y_table = pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5)
+    for y_table in dict_y_table.values():
+        score.append(compute_R2(y_table))
+    return(score)
+
+
 def plot_score(alpha_values, score, label = None, best_alpha =None, score_name ="r2") :
     ax = plt.gca()
     ax.set_xscale("log")
@@ -65,25 +107,46 @@ def launch_cv(model_name,lr_model, alpha_values,X_,y_, score_name="r2"):
     exec_time = (time.time() - time_ref)/5
     return(CV,exec_time)
 
-def compare_regressions(X_, y_, dict_lr_model, alpha_values, score_name="r2", fig_name=None):    
+def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2", fig_name=None):    
+    """
+    Compare regressions in dict_lr_models
+    
+    Parameters:
+    -----------------------------------------
+    X_,y_:  pd.DataFrame and pd.Series
+    dict_lr_model :  dict of sklearn format regressor
+    dict_param_grid : dict of hyperparameter to test 
+    
+    Returns:
+    -----------------------------------------
+    plot the score on the different parameters, 
+    and returns a pd.DataFrame containing exec. time and score on best hyperparam
+    """
+    X_ = X_.copy()
+    y_ = y_.copy()
     ## init save res :
     min_score = {}
     max_score = {}
     res = pd.DataFrame(columns=["score", "execution_time", "best_alpha"])
-    res.at["lr", :] = np.nan
+    dict_lr_model = dict_lr_model.copy()
 
     ## SIMPLE LINEAR REGRESSION  :
+    my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
+    res.at["lr", :] = np.nan
     time_ref = time.time()
-    lr = model_selection.GridSearchCV(linear_model.LinearRegression(), param_grid={},
-                                      scoring=score_name,cv=5)
-    lr.fit(X_, y_)
+    pseudo_cv_lr = pseudo_cv_without_paramgrid(X_, y_,my_meth, cv = 5)
     res.at["lr", "execution_time"] = (time.time() - time_ref)/5
-    score_lr = lr.cv_results_["mean_test_score"].mean()
+    score_lr = np.mean(get_score_from_pseudo_CV(pseudo_cv_lr))
     res.at["lr", "score" ] = score_lr
+    if abs(score_lr)>1 :
+        score_lr = 0
     res.at["lr","best_alpha"]=None
+    min_score["lr"] = score_lr
+    max_score["lr"] = score_lr
     
     # LOOP ON REG ON lr_model_list 
     for model_name,lr_model in dict_lr_model.items():
+        alpha_values = dict_param_grid[model_name]
         CV,execution_time = launch_cv(model_name,lr_model,alpha_values,X_,y_)
         ## extract CV results in dictionnaries :
         res.at[model_name,"score"] = CV.cv_results_['mean_test_score'].mean()
@@ -95,16 +158,21 @@ def compare_regressions(X_, y_, dict_lr_model, alpha_values, score_name="r2", fi
         max_score[model_name] = max(CV.cv_results_['mean_test_score'])
         ## plot scoring : 
         plot_score(alpha_values, CV.cv_results_['mean_test_score'], model_name, best_alpha, score_name)
-        ## save CV result
+        ## reset params in model
+        dict_lr_model[model_name].set_params(**{"alpha":None})
     ## add linear regression R2 line : 
-    plt.plot([alpha_values[0],alpha_values[-1]], [score_lr, score_lr], label = "linear regression")
+    min_alpha = min([min(arr) for arr in dict_param_grid.values()])
+    max_alpha = max([max(arr) for arr in dict_param_grid.values()])
+    plt.plot([min_alpha,max_alpha], [score_lr, score_lr], label = "linear regression")
     # plt.ylim([-0.1,1])
     plt.ylim([1.1*min(min_score.values())-0.05, 1.1*max(max_score.values())+0.05])
+    plt.xlim([min_alpha,max_alpha])
     plt.legend()
     if fig_name is not None : 
         figname = fig_name + "compare_regression"
         plt.savefig(res_path+"figures/"+figname+".jpg")
     return(res)
+
 
 def get_lm_score(X_,y_, X_test_std,y_test,dict_best_alpha):
     res = {}
@@ -155,8 +223,7 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
         figname = fig_name + "regul_paths_" + model_name + ".jpg" 
         plt.savefig(res_path+"figures/"+figname+".jpg")
         
-        
-
+from sklearn.preprocessing import StandardScaler
 def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20), 
                   score_name= "r2", figsize = (8,5), fig_name = None) : 
     ## DROP MISSING VALUES IN y : 
@@ -168,7 +235,6 @@ def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20),
     X_train, X_test, y_train, y_test = train_test_split(X_, y_, train_size=0.8)
 
     ## STANDARDIZE : 
-    from sklearn.preprocessing import StandardScaler
     my_std = preprocessing.StandardScaler()
     my_std.fit(X_train)
     X_train_std = my_std.transform(X_train)
