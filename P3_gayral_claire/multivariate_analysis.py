@@ -136,7 +136,9 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
     time_ref = time.time()
     pseudo_cv_lr = pseudo_cv_without_paramgrid(X_, y_,my_meth, cv = 5)
     res.at["lr", "execution_time"] = (time.time() - time_ref)/5
-    score_lr = np.mean(get_score_from_pseudo_CV(pseudo_cv_lr))
+    list_of_scores = get_score_from_pseudo_CV(pseudo_cv_lr)
+    ## I remove aberrant r2 (probably due to outliers)
+    score_lr = np.mean([score >0 for score in list_of_scores])
     res.at["lr", "score" ] = score_lr
     if abs(score_lr)>1 :
         score_lr = 0
@@ -485,7 +487,8 @@ def loop_on_cat_var_cluster_category(data, num_vars, list_of_cat_var) :
 def compare_boxplots_clustered_category(res_cluster, data,  cat_var, num_var = "CO2_emissions", 
                                     figsize = (20,15)) :
     """
-    plot 2 boxplots to compare before and after clustering categories
+    plot 2 boxplots to 
+    before and after clustering categories
     
     Parameters:
     -----------------------------------------
