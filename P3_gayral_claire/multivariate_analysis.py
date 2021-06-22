@@ -41,10 +41,10 @@ def plot_heatmap_dist(row_dist):
 from multivariate_analysis import *
 from sklearn.model_selection import RepeatedKFold
 
-X_ = X_std.copy()
-y_ = y_std["SiteEnergyUse(kBtu)"].copy()
-my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
-cv = 5
+# X_ = X_std.copy()
+# y_ = y_std["SiteEnergyUse(kBtu)"].copy()
+# my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
+# cv = 5
 def pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5):
     ## init
     k = 1
@@ -191,19 +191,20 @@ def get_lm_score(X_,y_, X_test_std,y_test,dict_best_alpha):
 
 ## REGULARIZATION PATH :
 def plot_regul_paths(alpha_values, lm_model, X_, y_, 
-                     var_names = None, best_alpha = None, 
-#                      figsize=(7,7),
-                     fig_name = None):
+                     var_names = None, best_alpha = None,  fig_name = None,
+                     legend_kwargs = {"loc" : "upper right","bbox_to_anchor":(1.5, 1), "ncol":1}):
     regulation_paths = []
     for alpha in alpha_values:
         lm_model.set_params(alpha = alpha)
         lm_model.fit(X_,y_)
         coeffs = lm_model.coef_
         regulation_paths.append(coeffs)
+    regulation_paths = np.array(regulation_paths).T
     ## PLOT REG. PÄTHS :
     ax = plt.gca()
     ax.set_xscale("log")
-    ax.plot(alpha_values, regulation_paths)
+    for i, var_path in enumerate(regulation_paths) :
+        ax.plot(alpha_values, var_path, color = my_color_set[i])
     ## VERTICAL LINE WITH THE BEST ALPHA :
     if best_alpha is not None : 
         ax.vlines(best_alpha, ymin = np.min(regulation_paths), ymax = np.max(regulation_paths), 
@@ -212,16 +213,17 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
     if var_names is not None :
         ax.legend(np.concatenate((np.array(var_names),['best alpha'])), 
                   title = "Variables :", 
-                  loc = "upper right",bbox_to_anchor=(1.5, 1))
-    else : 
-        plt.legend(var_names, title = "Variables :", 
-                   loc = "upper right", bbox_to_anchor=(1.5, 1))
+                  **legend_kwargs)
+#     else : 
+#         plt.legend(var_names, title = "Variables :", 
+#                    loc = "upper right", bbox_to_anchor=(1.5, 1))
     ax.set_xlabel("alpha")
     ax.set_ylabel("Coefficient Values")
     ax.set_title("Regularization paths")
     if fig_name is not None : 
         figname = fig_name + "regul_paths_" + model_name + ".jpg" 
         plt.savefig(res_path+"figures/"+figname+".jpg")
+        
         
 from sklearn.preprocessing import StandardScaler
 def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20), 
@@ -290,7 +292,7 @@ def eta_squared(x,y):
 ## ANOVA PLOT 
 ##
 
-my_color_set = list({ "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
+dict_color = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
           "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
           "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
           "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
@@ -298,7 +300,8 @@ my_color_set = list({ "forrest green":"#154406", "green":"#15b01a","sun yellow":
           "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
           "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
           "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
-         }.values())
+         }
+my_color_set = list(dict_color.values())
 
 def sort_by_modality_mean(data, cat_var, num_var, sort):
     
