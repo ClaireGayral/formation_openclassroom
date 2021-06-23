@@ -599,4 +599,4 @@ def get_corresp_cluster_var(original,cluster):
         dict_corresp_cluster_var[clust_k] = np.unique(original[clust_index].values)
         
     return(dict_corresp_cluster_var)
-
+    
