@@ -38,6 +38,34 @@ def plot_heatmap_dist(row_dist):
 ## Linear Regression  
 ##
 
+from sklearn import metrics
+def compute_R2(table):
+    return(metrics.r2_score(y_true = table.real, y_pred=table.pred))
+
+def get_score_from_pseudo_CV(dict_y_table, cv = 5):
+    score = []
+#     dict_y_table = pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5)
+    for y_table in dict_y_table.values():
+        score.append(compute_R2(y_table))
+    return(score)
+
+
+def plot_score(alpha_values, score, label = None, best_alpha =None, score_name ="r2") :
+    ax = plt.gca()
+    ax.set_xscale("log")
+    if sum(score<=-100)>1:
+        subset = np.where(score>=-100)
+        alpha_values= alpha_values[subset]
+        score = score[subset]
+        
+    ax.plot(alpha_values, score, label = label)
+    ax.set_xlabel("log(alpha)")
+    ax.set_ylabel("mean of scores ("+ str(score_name)+")")
+    ax.set_title("Choice of alpha with " +str(score_name))
+    ax.set_xlim([0.9*min(alpha_values),1.1*max(alpha_values)])
+    if best_alpha is not None : 
+        ax.plot([best_alpha,best_alpha], [-100, 100], 
+                color="grey", linestyle="dashed")
 from multivariate_analysis import *
 from sklearn.model_selection import RepeatedKFold
 
@@ -67,35 +95,8 @@ def pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5):
         y_table = pd.DataFrame(np.matrix((y_pred, CV_y_test)).T, columns=["pred","real"])
         res[fold_key] = y_table
     return(res)
+######HERE
 
-from sklearn import metrics
-def compute_R2(table):
-    return(metrics.r2_score(y_true = table.real, y_pred=table.pred))
-
-def get_score_from_pseudo_CV(dict_y_table, cv = 5):
-    score = []
-#     dict_y_table = pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5)
-    for y_table in dict_y_table.values():
-        score.append(compute_R2(y_table))
-    return(score)
-
-
-def plot_score(alpha_values, score, label = None, best_alpha =None, score_name ="r2") :
-    ax = plt.gca()
-    ax.set_xscale("log")
-    if sum(score<=-100)>1:
-        subset = np.where(score>=-100)
-        alpha_values= alpha_values[subset]
-        score = score[subset]
-        
-    ax.plot(alpha_values, score, label = label)
-    ax.set_xlabel("log(alpha)")
-    ax.set_ylabel("mean of scores ("+ str(score_name)+")")
-    ax.set_title("Choice of alpha with " +str(score_name))
-    ax.set_xlim([0.9*min(alpha_values),1.1*max(alpha_values)])
-    if best_alpha is not None : 
-        ax.plot([best_alpha,best_alpha], [-100, 100], 
-                color="grey", linestyle="dashed")
 
 def launch_cv(model_name,lr_model, alpha_values,X_,y_, score_name="r2"):
     time_ref = time.time()
@@ -107,6 +108,10 @@ def launch_cv(model_name,lr_model, alpha_values,X_,y_, score_name="r2"):
     exec_time = (time.time() - time_ref)/5
     return(CV,exec_time)
 
+dict_param_grid = {"ridge": np.logspace(-1, 4, 25),
+                   "lasso": np.logspace(-2, 2, 25),
+                   "enet" : np.logspace(-2, 2, 25),
+                  }
 def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2", fig_name=None):    
     """
     Compare regressions in dict_lr_models
@@ -170,6 +175,8 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
     plt.ylim([1.1*min(min_score.values())-0.05, 1.1*max(max_score.values())+0.05])
     plt.xlim([min_alpha,max_alpha])
     plt.legend()
+    ## plot absisse axis :
+    plt.plot([min_alpha,max_alpha],[0,0],"grey")
     if fig_name is not None : 
         figname = fig_name + "compare_regression"
         plt.savefig(res_path+"figures/"+figname+".jpg")
@@ -205,6 +212,7 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
     ## PLOT REG. PÄTHS :
     ax = plt.gca()
     ax.set_xscale("log")
+    
     for i, var_path in enumerate(regulation_paths) :
         ax.plot(alpha_values, var_path, color = my_color_set[i])
     ## VERTICAL LINE WITH THE BEST ALPHA :
@@ -228,7 +236,7 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
         
         
 from sklearn.preprocessing import StandardScaler
-def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20), 
+def compute_LR_CV(X,y, dict_lr_model, dict_param_grid = dict_param_grid, 
                   score_name= "r2", figsize = (8,5), fig_name = None) : 
     ## DROP MISSING VALUES IN y : 
     drop_index = y[y.isna()].index
@@ -241,20 +249,21 @@ def compute_LR_CV(X,y, dict_lr_model, alpha_values = np.logspace(-2, 2, 20),
     ## STANDARDIZE : 
     my_std = preprocessing.StandardScaler()
     my_std.fit(X_train)
-    X_train_std = my_std.transform(X_train)
-    X_test_std = my_std.transform(X_test)
+    X_train_std = pd.DataFrame(my_std.transform(X_train),columns = X_train.columns, index = X_train.index)
+    X_test_std = pd.DataFrame(my_std.transform(X_test),columns = X_test.columns, index = X_test.index)
 
     ## PLOTS :
     ## plot set of regulation parameter 
     plt.figure(figsize = figsize)
     res = compare_regressions(X_train_std, y_train,
-                              dict_lr_model, alpha_values, 
+                              dict_lr_model, dict_param_grid, 
                               score_name, fig_name)
     plt.show()
     ## plot regulation paths
     for model_name in dict_lr_model.keys():
         print(model_name," : ")
         plt.figure(figsize = figsize)
+        alpha_values = dict_param_grid[model_name]
         plot_regul_paths(alpha_values, lm_model = dict_lr_model[model_name], 
                      X_ = X_train_std, y_ = y_train,
                      var_names = X.columns, best_alpha = res.loc[model_name,"best_alpha"],
