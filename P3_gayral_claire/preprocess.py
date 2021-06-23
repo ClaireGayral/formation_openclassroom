@@ -62,11 +62,37 @@ unclassified = ["PropertyName", # txt
 
 
 #####################################
+##
+## Clustering on modalities by semantic : 
+##
 
-
+dict_cluster = {}
+dict_cluster["BuildingType"] = {
+                        "campus":["Campus"],
+                        "HR":["Multifamily HR (10+)"],
+                        "ML":["Multifamily MR (5-9)"],
+                        "LR":["Multifamily LR (1-4)"],
+                        "other":["Nonresidential WA","Nonresidential COS",
+                             "Nonresidential","SPS-District K-12"],
+                       } 
+dict_cluster["PrimaryPropertyType"] = {
+                        "medical":["Hospital", "Laboratory"],
+                        "large":["Large Office","Supermarket / Grocery Store"],
+                        "service":["Hotel","University","High-Rise Multifamily",
+                             "Medical Office","Senior Care Community",
+                             "Restaurant"],
+                        "other":["Other","Mixed Use Property","Retail Store", "Residence Hall"],
+                        "medium":["Mid-Rise Multifamily","Refrigerated Warehouse","K-12 School","Small- and Mid-Sized Office"],
+                        "empty":["Non-Refrigerated Warehouse", "Distribution Center","Warehouse" ],
+                        "small":["Low-Rise Multifamily"",Worship Facility"],
+                        "other2":["Self-Storage Facility","Office"],
+                       } 
 
 
 ###################################
+
+
+
 
 ##
 ##
