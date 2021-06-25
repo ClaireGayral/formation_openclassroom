@@ -73,7 +73,7 @@ dict_cluster["BuildingType"] = {
                         "ML":["Multifamily MR (5-9)"],
                         "LR":["Multifamily LR (1-4)"],
                         "other":["Nonresidential WA","Nonresidential COS",
-                             "Nonresidential","SPS-District K-12"],
+                             "NonResidential","SPS-District K-12"],
                        } 
 dict_cluster["PrimaryPropertyType"] = {
                         "medical":["Hospital", "Laboratory"],
