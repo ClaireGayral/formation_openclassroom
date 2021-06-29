@@ -17,6 +17,17 @@ import time
 ##
 
 def plot_heatmap_dist(row_dist):
+    """
+    to plot correlation matrix for example
+    
+    Parameters:
+    -----------------------------------------
+    row_dist : pd.DataFrame 
+    
+    Returns:
+    -----------------------------------------
+    plt.plot of correlation matrix
+    """
     # index_sort = row_dist[row_dist.sum()==row_dist.sum().min()].index[0]
     index_sort = row_dist.sum().sort_values().index.values
     tmp = row_dist.loc[index_sort,index_sort]
@@ -74,6 +85,20 @@ from sklearn.model_selection import RepeatedKFold
 # my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
 # cv = 5
 def pseudo_cv_without_paramgrid(X_, y_, my_meth, cv = 5):
+    """
+    Compute cv times my_meth on a CV-sample (as GridSearchCV)
+    
+    Parameters:
+    -----------------------------------------
+    X_, y_ :pd.DataFrame and Series
+    my_meth : sklearn model
+    cv (default is 5) : number of folds
+    
+    Returns:
+    -----------------------------------------
+    dictionnary with key = folds, 
+        values = pd.Dataframe(columns=["pred","real"])
+    """
     ## init
     k = 1
     res = {} # dict of dict 
@@ -120,7 +145,7 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
     -----------------------------------------
     X_,y_:  pd.DataFrame and pd.Series
     dict_lr_model :  dict of sklearn format regressor
-    dict_param_grid : dict of hyperparameter to test 
+    dict_param_grid_ : dict of hyperparameter to test 
     
     Returns:
     -----------------------------------------
@@ -134,26 +159,13 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
     max_score = {}
     res = pd.DataFrame(columns=["score", "execution_time", "best_alpha"])
     dict_lr_model = dict_lr_model.copy()
-
-    ## SIMPLE LINEAR REGRESSION  :
-    my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
-    res.at["lr", :] = np.nan
-    time_ref = time.time()
-    pseudo_cv_lr = pseudo_cv_without_paramgrid(X_, y_,my_meth, cv = 5)
-    res.at["lr", "execution_time"] = (time.time() - time_ref)/5
-    list_of_scores = get_score_from_pseudo_CV(pseudo_cv_lr)
-    ## I remove aberrant r2 (probably due to outliers)
-    score_lr = np.mean([score >0 for score in list_of_scores])
-    res.at["lr", "score" ] = score_lr
-    if abs(score_lr)>1 :
-        score_lr = 0
-    res.at["lr","best_alpha"]=None
-    min_score["lr"] = score_lr
-    max_score["lr"] = score_lr
+    dict_param_grid_ = {key : dict_param_grid[key] for key in dict_lr_model.keys()}
+    min_alpha = min([min(arr) for arr in dict_param_grid_.values()])
+    max_alpha = max([max(arr) for arr in dict_param_grid_.values()])
     
     # LOOP ON REG ON lr_model_list 
     for model_name,lr_model in dict_lr_model.items():
-        alpha_values = dict_param_grid[model_name]
+        alpha_values = dict_param_grid_[model_name]
         CV,execution_time = launch_cv(model_name,lr_model,alpha_values,X_,y_)
         ## extract CV results in dictionnaries :
         res.at[model_name,"score"] = CV.cv_results_['mean_test_score'].mean()
@@ -167,11 +179,27 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
         plot_score(alpha_values, CV.cv_results_['mean_test_score'], model_name, best_alpha, score_name)
         ## reset params in model
         dict_lr_model[model_name].set_params(**{"alpha":None})
+  
+    ## SIMPLE LINEAR REGRESSION  :
+    my_meth = linear_model.LinearRegression(fit_intercept = True,normalize = True)
+    res.at["lr", :] = np.nan
+    time_ref = time.time()
+    pseudo_cv_lr = pseudo_cv_without_paramgrid(X_, y_,my_meth, cv = 5)
+    res.at["lr", "execution_time"] = (time.time() - time_ref)/5
+    list_of_scores = get_score_from_pseudo_CV(pseudo_cv_lr)
+    ## I remove aberrant r2 (probably due to outliers)
+    score_lr = np.mean(list_of_scores)#[score >0 for score in list_of_scores])
+    res.at["lr", "score" ] = score_lr
+    res.at["lr","best_alpha"]=None
+        
     ## add linear regression R2 line : 
-    min_alpha = min([min(arr) for arr in dict_param_grid.values()])
-    max_alpha = max([max(arr) for arr in dict_param_grid.values()])
-    plt.plot([min_alpha,max_alpha], [score_lr, score_lr], label = "linear regression")
-    # plt.ylim([-0.1,1])
+    if abs(score_lr)<2 :
+        plt.plot([min_alpha,max_alpha], [score_lr, score_lr], label = "linear regression")
+    else : 
+        score_lr = 0
+    min_score["lr"] = score_lr
+    max_score["lr"] = score_lr
+    ## set y lim :
     plt.ylim([1.1*min(min_score.values())-0.05, 1.1*max(max_score.values())+0.05])
     plt.xlim([min_alpha,max_alpha])
     plt.legend()
@@ -202,6 +230,23 @@ def get_lm_score(X_,y_, X_test_std,y_test,dict_best_alpha):
 def plot_regul_paths(alpha_values, lm_model, X_, y_, 
                      var_names = None, best_alpha = None,  fig_name = None,
                      legend_kwargs = {"loc" : "upper right","bbox_to_anchor":(1.5, 1), "ncol":1}):
+    """
+    Loop on alpha values to get regulation paths
+    
+    Parameters:
+    -----------------------------------------
+    alpha_values : list of values
+    lm_model : sklearn model
+    X_, y_ :pd.DataFrame and Series
+    var_names (default is None) : list of variable names for legend
+    best_alpha (default is None) : value of best hyperparam to plot vertical line
+    fig_name (default is None) : filename to save the plot
+    legend_kwargs : dictionnary of parameters for legend
+    
+    Returns:
+    -----------------------------------------
+    plt.plot of regul paths
+    """
     regulation_paths = []
     for alpha in alpha_values:
         lm_model.set_params(alpha = alpha)
@@ -315,7 +360,7 @@ dict_color = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf2
 my_color_set = list(dict_color.values())
 
 def sort_by_modality_mean(data, cat_var, num_var, sort):
-    
+    ## attention a reprendre si sort = False
     groups = []
     group_mean = []
     modalities = data[cat_var].values.categories
@@ -331,7 +376,8 @@ def sort_by_modality_mean(data, cat_var, num_var, sort):
     return(groups, modalities, sort_index)
 
 def plot_boxplot(data,cat_var, num_var, sort = False, fig_name = None, dict_color_mod={}):
-    
+    data = data.copy()
+    data[cat_var] = data[cat_var].cat.remove_unused_categories()
     groups, modalities, sort_index = sort_by_modality_mean(data,cat_var,num_var,sort)
     
     # Propriétés graphiques 
@@ -567,12 +613,12 @@ def compare_boxplots_clustered_category_COPkmeans(res_cluster, data,
     plt.subplot(1,2,1)
     plot_boxplot(data, cat_var, num_var,sort=True, dict_color_mod = dict_color_mod)
     eta2 = eta_squared(x=data[cat_var], y=data[num_var])
-    print(cat_var, "original : eta² =",np.round(eta2,2))
+    print(cat_var, "original : eta² =",np.round(eta2,3))
 
     plt.subplot(1,2,2)
     plot_boxplot(res_cluster,cat_var, num_var, sort=True, dict_color_mod = dict_color_mod)
     eta2 = eta_squared(x=res_cluster[cat_var], y=res_cluster[num_var])
-    print(cat_var, "clustered : eta² =",np.round(eta2,2))
+    print(cat_var, "clustered : eta² =",np.round(eta2,3))
     
     
 def get_corresp_cluster_var(original,cluster):
