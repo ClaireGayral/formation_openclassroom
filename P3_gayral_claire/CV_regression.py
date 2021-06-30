@@ -127,3 +127,40 @@ def launch_CV(X, y, y_name ,dict_models,dict_param_grid, cv = 5):
     with open(res_path+y_name+"_dict_CV_best_params.pkl", 'wb') as fp:
         pickle.dump(dict_best_params, fp, protocol=pickle.HIGHEST_PROTOCOL) 
 
+
+##        
+### apprentissage sur tout Xtrain : 
+##
+
+def train_with_best_params(y_name, dict_models): 
+    ## open best param dictionary
+    with open(res_path+y_name+"_dict_CV_best_params.pkl", 'rb') as fp:
+        dict_best_params = pickle.load(fp) 
+    for model_name in dict_models.keys(): 
+        best_param  = dict_best_params[model_name]
+        regressor = dict_models[model_name]
+        regressor.set_params(**best_param)
+#         regressor.fit(X_train,y_train)
+        dict_models[model_name] = regressor
+    return(dict_models)  
+
+def get_prediction(dict_models, y_train_, y_test_, X_train_, X_test_):
+    ## init
+    predictions = y_test_.copy()
+    predictions = predictions.rename("real_"+y_train_.name)
+    for model_name in dict_models.keys():
+        regressor = dict_models[model_name]
+        regressor.fit(X_train_,y_train_)
+        model_pred = pd.Series(regressor.predict(X_test_), 
+                               name=model_name, index = X_test_.index)
+        predictions = pd.concat((predictions,model_pred), axis = 1) 
+    return(predictions) 
+
+from sklearn.metrics import r2_score
+def get_score(predictions) : 
+    scores = {}
+    for model_name in predictions.columns[1:] :
+        y_real =predictions.iloc[:,0]
+        y_pred = predictions[model_name]
+        scores[model_name] = r2_score(y_real, y_pred)
+    return(scores)
