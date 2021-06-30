@@ -33,7 +33,8 @@ numerical_var = ["NumberofFloors","PropertyGFATotal",
                  ]
 
 categorical_var = ["CouncilDistrictCode",# in [1,7]
-                   "2010 Census Tracts", # in [116,135]
+                   "2010 Census Tracts", # in [116,135],
+                   "SPD_micro_community",
                    "Seattle Police Department Micro Community Policing Plan Areas", # in [1,61]
                    "City Council Districts", # in [1,2]
                    "SPD Beats",# in [1,51]

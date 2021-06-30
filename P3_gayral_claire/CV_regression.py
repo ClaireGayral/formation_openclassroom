@@ -86,7 +86,7 @@ def plot_cv_res(res,dict_log_param) :
     '''
     dict_index_values = get_dict_index(res)
     nb_params = len(res["params"][0].keys())
-    plt.figure(figsize=(12,5*nb_params))
+    plt.figure(figsize=(10,4*nb_params))
     subplot_pos = [nb_params,2,1]
 
     for param_name in res["params"][0].keys() :
@@ -163,3 +163,30 @@ def get_score(predictions) :
         y_pred = predictions[model_name]
         scores[model_name] = r2_score(y_real, y_pred)
     return(scores)
+
+
+def init_times_setting_best_params(y_name, dict_models): 
+    ## init
+    times_y_name = {}
+    ## open best param dictionary
+    with open(res_path+y_name+"_dict_CV_best_params.pkl", 'rb') as fp:
+        dict_best_params = pickle.load(fp) 
+    for model_name in dict_models.keys(): 
+        t0 = time.time()
+        best_param  = dict_best_params[model_name]
+        regressor = dict_models[model_name]
+        regressor.set_params(**best_param)
+        times_y_name[model_name] = time.time() - t0
+    return(times_y_name)  
+
+def time_add_get_prediction(times_y_name,dict_models, 
+                            y_train_, y_test_, 
+                            X_train_, X_test_):
+    for model_name in dict_models.keys():
+        t0 = time.time()
+        regressor = dict_models[model_name]
+        regressor.fit(X_train_,y_train_)
+        model_pred = pd.Series(regressor.predict(X_test_), 
+                               name=model_name, index = X_test_.index)
+        times_y_name[model_name] += time.time() - t0 
+    return(times_y_name) 

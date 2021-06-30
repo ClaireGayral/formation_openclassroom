@@ -11,6 +11,8 @@ from sklearn import preprocessing
 
 import time
 
+res_path = "/home/clairegayral/Documents/openclassroom/res/P3/"
+
 
 ## 
 ## Correlation matrix
@@ -206,7 +208,7 @@ def compare_regressions(X_, y_, dict_lr_model, dict_param_grid, score_name="r2",
     ## plot absisse axis :
     plt.plot([min_alpha,max_alpha],[0,0],"grey")
     if fig_name is not None : 
-        figname = fig_name + "compare_regression"
+        figname = fig_name + "_compare_regression"
         plt.savefig(res_path+"figures/"+figname+".jpg")
     return(res)
 
@@ -276,7 +278,7 @@ def plot_regul_paths(alpha_values, lm_model, X_, y_,
     ax.set_ylabel("Coefficient Values")
     ax.set_title("Regularization paths")
     if fig_name is not None : 
-        figname = fig_name + "regul_paths_" + model_name + ".jpg" 
+        figname = fig_name + "_regul_paths"#_" + model_name + ".jpg" 
         plt.savefig(res_path+"figures/"+figname+".jpg")
         
         
@@ -309,10 +311,14 @@ def compute_LR_CV(X,y, dict_lr_model, dict_param_grid = dict_param_grid,
         print(model_name," : ")
         plt.figure(figsize = figsize)
         alpha_values = dict_param_grid[model_name]
+        if fig_name is not None : 
+            figname = fig_name+"_"+model_name
+        else : 
+            figname = None
         plot_regul_paths(alpha_values, lm_model = dict_lr_model[model_name], 
                      X_ = X_train_std, y_ = y_train,
                      var_names = X.columns, best_alpha = res.loc[model_name,"best_alpha"],
-                     fig_name = fig_name)
+                     fig_name = figname)
         plt.show()
     ## print results :
     return(res)
