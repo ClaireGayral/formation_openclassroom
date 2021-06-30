@@ -140,7 +140,6 @@ def train_with_best_params(y_name, dict_models):
         best_param  = dict_best_params[model_name]
         regressor = dict_models[model_name]
         regressor.set_params(**best_param)
-#         regressor.fit(X_train,y_train)
         dict_models[model_name] = regressor
     return(dict_models)  
 

@@ -132,6 +132,38 @@ dict_cluster["LargestPropertyUseType"] = {
                         "8":['Food Service'],
 }
 
+
+# dict_cluster["LargestPropertyUseType"] = {
+#                         "hospital":['Hospital (General Medical & Surgical)'],
+#                         "gathering":['Courthouse', 'Data Center','Convention Center',],
+#                         "cares/university":['Laboratory', 'Lifestyle Center',
+#                             'Urgent Care/Clinic/Other Outpatient'],
+#                         "university":['College/University'],
+#                         "1":[ 'Police Station', 'Wholesale Club/Supercenter'],
+#                         "service":['Senior Care Community', 'Hotel', 'Supermarket/Grocery Store',
+#                             'Other - Mall', 'Parking','Medical Office',
+#                             'Other - Entertainment/Public Assembly', 'Other - Restaurant/Bar',
+#                             'Strip Mall', 'Restaurant',],
+#                         "2":['Other/Specialty Hospital', 'Museum', 'Other',
+#        'Fitness Center/Health Club/Gym', 'Other - Recreation', ],
+#                         "3":['Office',
+#        'Other - Education', 'Residence Hall/Dormitory',
+#        'Other - Public Services',],
+#                         "4":['Fire Station', 'Retail Store', 'Library',
+#        'K-12 School', 'Multifamily Housing', 'Manufacturing/Industrial Plant',
+#        'Financial Office', 'Social/Meeting Hall', ],
+#                         "5":['Other - Utility',
+#        'Adult Education', 'Other - Services', 'Other - Lodging/Residential',],
+#                         "6":['Refrigerated Warehouse',
+#        'Repair Services (Vehicle, Shoe, Locksmith, etc)', 'Performing Arts',
+#        'Personal Services (Health/Beauty, Dry Cleaning, etc)',],
+#                         "7":['Automobile Dealership', 'Movie Theater', 'Distribution Center',
+#        'Pre-school/Daycare', 'Non-Refrigerated Warehouse', 'Worship Facility',
+#        'Residential Care Facility',],
+#                         "8":['Bank Branch', 'Prison/Incarceration',
+#        'Outpatient Rehabilitation/Physical Therapy', 'Self-Storage Facility',],
+#                         "9":['Food Service'], }
+
 # dict_cluster["LargestPropertyUseType"] = {
 #                         "hospital":['Hospital (General Medical & Surgical)'],
 #                         "gathering":['Courthouse', 'Data Center','Convention Center',],
