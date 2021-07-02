@@ -79,7 +79,7 @@ def plot_score(alpha_values, score, label = None, best_alpha =None, score_name =
     if best_alpha is not None : 
         ax.plot([best_alpha,best_alpha], [-100, 100], 
                 color="grey", linestyle="dashed")
-from multivariate_analysis import *
+
 from sklearn.model_selection import RepeatedKFold
 
 # X_ = X_std.copy()
