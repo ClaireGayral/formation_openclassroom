@@ -10,7 +10,7 @@ import warnings
 res_path = "/home/clairegayral/Documents/openclassroom/res/P4/"
 
 
-def get_dict_index(res):
+def get_dict_index_pipe(res):
     '''
     Get the index of different values in the results_cv dictionnary of GridSearchCV
     '''
@@ -32,7 +32,7 @@ def get_score_and_time(param_name, res, dict_index_values):
     -----------------------------------------
     param_name : str of the parameter name
     res : results_cv dictionnary of GridSearchCV
-    dict_index_values : result from get_dict_index(res)
+    dict_index_values : result from get_dict_index_pipe(res)
     
     Returns:
     -----------------------------------------
@@ -74,7 +74,7 @@ def cv_plot_score_and_time(x, y_score, y_time, subplot = [1,2,1],
     plt.ylabel("time (s)")
     plt.title("Time in Cross validation")
 
-def plot_cv_res(res,dict_log_param) :
+def plot_cv_res_pipe(res,dict_log_param) :
     '''
 
     Parameters:
@@ -84,7 +84,7 @@ def plot_cv_res(res,dict_log_param) :
     Returns:
     -----------------------------------------
     '''
-    dict_index_values = get_dict_index(res)
+    dict_index_values = get_dict_index_pipe(res)
     nb_params = len(res["params"][0].keys())
     plt.figure(figsize=(10,4*nb_params))
     subplot_pos = [nb_params,2,1]
