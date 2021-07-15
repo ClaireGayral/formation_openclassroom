@@ -12,7 +12,7 @@ res_path = "/home/clairegayral/Documents/openclassroom/res/P4/"
 
 def get_dict_index(res):
     '''
-    Get the index of different values in the results_cv dictionnary of GridSearchCV
+    Get the index of different values in the results_cv dictionnary of GridSearchCV : {param:[bool_array_value1, bool_array_value2, ...]}
     '''
     dict_index_values = {}
     for param_name in res["params"][0].keys() : 
