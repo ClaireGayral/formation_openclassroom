@@ -43,14 +43,16 @@ def draw_cluster_legend(ax2,clustering, corresp_color_dict):
     plt.axis("off")
     return(ax2)
 
-def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0, lims=None, clustering = None):
+def display_circles(pcs, n_comp, my_meth, axis_ranks, labels=None, 
+                    label_rotation=0, lims=None, clustering = None, 
+                    figsize = (9,6), fig_name=None):
     ## set coloration palette : 
     if clustering is not None : 
-        my_color_set = ['#154406', '#15b01a', '#fffd01', '#f97306', '#c0022f',
-                '#0343df', '#fe02a2', '#8b3103', '#7e1e9c', '#017371',
-                '#380282', '#6b8ba4', '#75bbfd', '#ff81c0', '#c79fef',
-                '#ff073a', '#fdaa48', '#fea993', '#fe7b7c', '#c20078',
-                '#029386', '#677a04', '#b25f03', '#070d0d']
+        my_color_set = ['#154406', '#15b01a', '#f97306', '#c0022f',
+                        '#0343df', '#fe02a2', '#8b3103', '#7e1e9c', '#017371',
+                        '#380282', '#6b8ba4', '#75bbfd', '#ff81c0', '#c79fef',
+                        '#ff073a', '#fdaa48', '#fea993', '#fe7b7c', '#c20078',
+                        '#029386', '#677a04', '#b25f03', '#070d0d', '#ffdf22']
         corresp_color_dict = dict(zip(clustering.values.categories, my_color_set))
         my_color = clustering.values.map(corresp_color_dict)
 
@@ -58,19 +60,23 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
         my_color = "grey"
     ## set global plot arguments : 
     plot_kwargs = {"alpha":1, "color":my_color}
-    ## draw the correlation circle for pca : 
+    ## draw the correlation circle for my_meth : 
     for d1, d2 in axis_ranks: # On affiche les 3 premiers plans factoriels, donc les 6 premières composantes
         if d2 < n_comp:
             ## initialise figure
+            figsize_x = list(figsize)[0]
+            figsize_y = list(figsize)[1]
+            # figsize = (figsize_x, figsize_y)
             if clustering is not None : 
-                fig = plt.figure(figsize = (18,6))
+                figsize_x = 2*figsize_x
+                fig = plt.figure(figsize = (figsize_x, figsize_y))
                 ## affichage de la legende du clustering en couleur : 
                 ax2 = fig.add_subplot(1,2,2)
                 draw_cluster_legend(ax2, clustering, corresp_color_dict)
                 # initialisation de la figure "cercle"
                 ax1 = fig.add_subplot(1,2,1)
             else : 
-                fig = plt.figure(figsize = (9,6))
+                fig = plt.figure(figsize = (figsize_x, figsize_y))
                 ax1 = fig.add_subplot(1,1,1)
 
             ## détermination des limites du graphique
@@ -109,17 +115,25 @@ def display_circles(pcs, n_comp, pca, axis_ranks, labels=None, label_rotation=0,
             ## affichage des lignes horizontales et verticales
             plt.plot([-1, 1], [0, 0], color='grey', ls='--')
             plt.plot([0, 0], [-1, 1], color='grey', ls='--')
-
-            ## nom des axes, avec le pourcentage d'inertie expliqué
-            ax1.set_xlabel('F{} ({}%)'.format(d1+1, 
-                                round(100*pca.explained_variance_ratio_[d1],1)))
-            ax1.set_ylabel('F{} ({}%)'.format(d2+1, 
-                                round(100*pca.explained_variance_ratio_[d2],1)))
-            ax1.set_title("Cercle des corrélations (F{} et F{})".format(d1+1, d2+1))
-    plt.show(block=False)
             
+            if hasattr(my_meth,"explained_variance_ratio_") : 
+                ## nom des axes, avec le pourcentage d'inertie expliqué
+                ax1.set_xlabel('F{} ({}%)'.format(d1+1, 
+                                    round(100*my_meth.explained_variance_ratio_[d1],1)))
+                ax1.set_ylabel('F{} ({}%)'.format(d2+1, 
+                                    round(100*my_meth.explained_variance_ratio_[d2],1)))
+            else : 
+                ## nom des axes
+                ax1.set_xlabel('F{}'.format(d1+1))
+                ax1.set_ylabel('F{}'.format(d2+1))
+            ax1.set_title("Cercle des corrélations (F{} et F{})".format(d1+1, d2+1))
+            if fig_name is not None :
+                plt.savefig(res_path+"figures/"+fig_name+str(d1+1)+str(d2+1)+".jpg")
+
+        # plt.show(block=False)
+    
         
-def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, ind_labels=None, alpha=1, clustering = None):
+def display_factorial_planes(X_projected, n_comp, my_meth, axis_ranks, ind_labels=None, alpha=1, clustering = None, figsize = (12,10)):
     # args are as defined just above 
     plot_kwargs = {"marker":"x", "alpha":alpha, 's':20}#, "label" : clustering.values.categories}
     # set dict of color if clustering : 
@@ -134,7 +148,7 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, ind_labels=No
             ax1 = "Axis"+ str(d1+1)
             ax2 = "Axis"+ str(d2+1)
             # initialisation de la figure       
-            fig = plt.figure(figsize=(12,10))
+            fig = plt.figure(figsize=figsize)
             if clustering is not None :
                 for k in clustering.values.categories:
                     cluster_index = clustering[clustering==k].index
@@ -160,12 +174,19 @@ def display_factorial_planes(X_projected, n_comp, pca, axis_ranks, ind_labels=No
             plt.plot([-100, 100], [0, 0], color='grey', ls='--')
             plt.plot([0, 0], [-100, 100], color='grey', ls='--')
 
-            # nom des axes, avec le pourcentage d'inertie expliqué
-            plt.xlabel('F{} ({}%)'.format(d1+1, round(100*pca.explained_variance_ratio_[d1],1)))
-            plt.ylabel('F{} ({}%)'.format(d2+1, round(100*pca.explained_variance_ratio_[d2],1)))
-
+            if hasattr(my_meth,"explained_variance_ratio_") : 
+                ## nom des axes, avec le pourcentage d'inertie expliqué
+                plt.xlabel('F{} ({}%)'.format(d1+1, 
+                                    round(100*my_meth.explained_variance_ratio_[d1],1)))
+                plt.ylabel('F{} ({}%)'.format(d2+1, 
+                                    round(100*my_meth.explained_variance_ratio_[d2],1)))
+            else : 
+                ## nom des axes
+                plt.xlabel('F{}'.format(d1+1))
+                plt.ylabel('F{}'.format(d2+1))
+            
             plt.title("Projection des individus (sur F{} et F{})".format(d1+1, d2+1))
-            plt.show(block=False)
+            # plt.show(block=False)
             
 
 def display_scree_plot(pca):
