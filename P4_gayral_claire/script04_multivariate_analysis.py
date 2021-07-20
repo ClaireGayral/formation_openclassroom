@@ -355,16 +355,22 @@ def eta_squared(x,y):
 ## ANOVA PLOT 
 ##
 
-dict_color = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
-          "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
-          "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
-          "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
-          "pink":"#ff81c0","lavender":"#c79fef","neon red":"#ff073a",
-          "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
-          "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
-          "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
-         }
+# dict_color = { "forrest green":"#154406", "green":"#15b01a","sun yellow":"#ffdf22",
+#           "orange":"#f97306","lipstick red":"#c0022f","blue":"#0343df","shocking pink":"#fe02a2",
+#           "rust brown":"#8b3103","purple":"#7e1e9c","dark aquamarine":"#017371",
+#           "indigo":"#380282","grey blue" :"#6b8ba4","sky blue ":"#75bbfd",
+#           "pink":"#ff81c0","lavender":"#c79fef","neon red":"#ff073a",
+#           "goldenrod":"#fdaa48", "light salmon":"#fea993","salmon pink":"#fe7b7c",
+#           "magenta":"#c20078","teal":"#029386","olive green": "#677a04",
+#           "orangish brown":"#b25f03","almost black":"#070d0d", "silver" : "#c5c9c7",  #gris et noir
+#          }
+# my_color_set = list(dict_color.values())
+
+
+unique = range(70)
+dict_color = dict(zip(unique, sns.color_palette(n_colors=len(unique))))
 my_color_set = list(dict_color.values())
+
 
 def sort_by_modality_mean(data, cat_var, num_var, sort):
     ## attention a reprendre si sort = False

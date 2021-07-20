@@ -145,8 +145,8 @@ def display_factorial_planes(X_projected, n_comp, my_meth, axis_ranks, ind_label
 
     for d1,d2 in axis_ranks:
         if d2 < n_comp:
-            ax1 = "Axis"+ str(d1+1)
-            ax2 = "Axis"+ str(d2+1)
+            ax1 = "axis"+ str(d1+1)
+            ax2 = "axis"+ str(d2+1)
             # initialisation de la figure       
             fig = plt.figure(figsize=figsize)
             if clustering is not None :
@@ -188,6 +188,58 @@ def display_factorial_planes(X_projected, n_comp, my_meth, axis_ranks, ind_label
             plt.title("Projection des individus (sur F{} et F{})".format(d1+1, d2+1))
             # plt.show(block=False)
             
+def plot_PCA_proj_of_clusters(X_proj, my_meth, axis_rank, ind_labels=None, 
+                         alpha=1, clustering=None, figsize=(12,10)):
+    ##                     
+    ## first use in P4 
+    ##                     
+    plot_kwargs = {"marker":"x", "alpha":alpha, 's':10}#, "label" : clustering.values.categories}
+    n_comp = max(list(sum(axis_ranks, ())))+1
+    if clustering is None :
+        clustering = pd.Series(np.ones(X_proj.shape[0]),
+                               index = X_proj.index,dtype="category")
+    ## add yellow in color to match with nutri-score : (yellow = '#ffdf22')
+    my_color_set = ['#154406', '#15b01a', '#ffdf22', '#f97306', '#c0022f',
+                    '#0343df', '#fe02a2', '#8b3103', '#7e1e9c', '#017371',
+                    '#380282', '#6b8ba4', '#75bbfd', '#ff81c0', '#c79fef',
+                    '#ff073a', '#fdaa48', '#fea993', '#fe7b7c', '#c20078',
+                    '#029386', '#677a04', '#b25f03', '#070d0d', '#ffdf22']
+    my_color_set = my_color_set * (X_proj.shape[0]//len(my_color_set) + 1) 
+    corresp_color_dict = dict(zip(clustering.values.categories, my_color_set))
+    plot_rank = [1,len(axis_ranks),1]
+
+    for cluster in clustering.cat.categories:
+        selected_index = clustering[clustering==cluster].index
+        sub_X_proj = X_proj.loc[selected_index,:]
+        count_fig = 1
+        plt.figure(figsize=figsize)
+        for d1,d2 in axis_ranks:
+            if d2 < n_comp:
+                plot_rank[2] = count_fig            
+                plt.subplot(*plot_rank)
+                ax1 = "axis"+ str(d1+1)
+                ax2 = "axis"+ str(d2+1)
+                # initialisation de la figure       
+
+                plt.scatter(sub_X_proj.loc[:, ax1],sub_X_proj.loc[:, ax2], 
+                            color=corresp_color_dict[cluster], label = cluster, **plot_kwargs)
+                plt.legend()
+
+                plt.xlim([-10,10])
+                plt.ylim([-20,20])
+                # affichage des lignes horizontales et verticales
+                plt.plot([-100, 100], [0, 0], color='grey', ls='--')
+                plt.plot([0, 0], [-100, 100], color='grey', ls='--')
+
+                # nom des axes, avec le pourcentage d'inertie expliqué
+                plt.xlabel('F{} ({}%)'.format(d1+1, round(100*my_pca.explained_variance_ratio_[d1],1)))
+                plt.ylabel('F{} ({}%)'.format(d2+1, round(100*my_pca.explained_variance_ratio_[d2],1)))
+
+                plt.title("Projection des individus (sur F{} et F{})".format(d1+1, d2+1))
+                count_fig += 1 
+        plt.show()
+        
+
 
 def display_scree_plot(pca):
     scree = pca.explained_variance_ratio_*100
