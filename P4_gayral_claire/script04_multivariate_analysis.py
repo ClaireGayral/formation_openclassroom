@@ -46,7 +46,26 @@ def plot_heatmap_dist(row_dist):
         horizontalalignment='right')
     plt.show()
 
-
+def plot_corr_heatmap(corr): 
+    fig, ax = plt.subplots(figsize=(7,7))    
+    vmax = np.ceil(corr.values).max()
+    vmin = np.floor(corr.values).min()
+    ax = sns.heatmap(
+        corr, 
+        vmin=vmin,
+        vmax=vmax,
+        center=(vmax-vmin)/2,
+        cmap=sns.diverging_palette(20, 220, n=200),
+        square=True
+    )
+    ax.set_xticklabels(
+        ax.get_xticklabels(),
+        rotation=45,
+        horizontalalignment='right'
+    )
+    ax.set_title("Correlation matrix")
+    
+    
 ##
 ## Linear Regression  
 ##
