@@ -8,9 +8,9 @@ res_path = "/home/clairegayral/Documents/openclassroom/res/P4/"
 from sklearn import preprocessing
 from sklearn.impute import KNNImputer
 
-##
-## open data :
-##
+###################
+#### open data ####
+###################
 
 product_category_name_translation = pd.read_csv(data_path 
                         + "product_category_name_translation.csv")
@@ -23,8 +23,23 @@ order_items = pd.read_csv(data_path + "olist_order_items_dataset.csv")
 geolocation = pd.read_csv(data_path + "olist_geolocation_dataset.csv")
 customers = pd.read_csv(data_path + "olist_customers_dataset.csv")
 
+
+## Lien entre les tables :
+## order-product
+link_order_product = pd.merge(orders["order_id"], 
+    order_items[["order_id","product_id"]], 
+    on = "order_id", how = 'right')
+link_order_product
+
+
+## customer-order
+link_customer_order = pd.merge(customers[["customer_unique_id","customer_id"]], 
+    orders[["customer_id","order_id"]], 
+    on = "customer_id", how = 'right')
+
+
 ##########################
-#### Construction NMF ####
+#### Construction RFM ####
 ##########################
 
 ##
@@ -46,7 +61,7 @@ recency = pd.Series(t_max-customer_last_timestamp, name = "recency")
 recency =  recency / np.timedelta64(1, "D")
 recency = recency.reset_index()
 
-rmf = recency
+rfm = recency
 
 ##
 ## Frequency
@@ -56,7 +71,7 @@ frequency = tmp.customer_unique_id.value_counts()
 frequency = pd.Series(frequency).reset_index()
 frequency = frequency.rename(columns={"index":"customer_unique_id",
                                       "customer_unique_id":"frequency"})
-rmf = pd.merge(rmf, frequency, on="customer_unique_id", how="left")
+rfm = pd.merge(rfm, frequency, on="customer_unique_id", how="left")
 
 ##
 ## Monetary Value
@@ -67,7 +82,8 @@ tmp = pd.merge(tmp, order_payments[["order_id","payment_value"]],
 monetary_value = tmp.groupby("customer_unique_id").sum()
 monetary_value = monetary_value.reset_index()
 monetary_value = monetary_value.rename(columns={"payment_value":"monetary_value"})
-rmf = pd.merge(rmf, monetary_value, on="customer_unique_id", how="left")
+rfm = pd.merge(rfm, monetary_value, on="customer_unique_id", how="left")
+rfm = rfm.set_index("customer_unique_id")
 
 ########################################
 #### construction table my_products ####
@@ -123,26 +139,6 @@ coeffs = pd.read_csv(res_path+"products_items_coeffs_PCA.csv",index_col=0, squee
 my_products = project2d_products(products, coeffs=coeffs,
                                  var=(dimension_vars, description_vars))
 my_products = my_products.reset_index()
-##
-## Product category name
-##
-
-y = products[["product_id","product_category_name"]]
-y = y.set_index("product_id").astype("object")
-y = y.fillna("missing")
-y = y.astype("category")
-
-all_cat = pd.Series(y["product_category_name"].cat.categories, name ="product_category_old" )
-new_cat = pd.Series(y["product_category_name"].cat.categories, name ="product_category_name" )
-for idx in all_cat.index :
-    cat = all_cat[idx]
-    new_cat.at[idx] = cat.split("_")[0]
-rename_cat = pd.merge(all_cat,new_cat, left_index=True, right_index=True)
-rename_cat = rename_cat.set_index("product_category_old").to_dict()
-rename_cat['la']="cuisine"
-y = y.replace(rename_cat["product_category_name"])
-y = y.astype("category").reset_index()
-my_products = pd.merge(y,my_products, on="product_id",how="left")
 
 ##
 ## Ordered product
@@ -181,6 +177,110 @@ tmp = order_items.groupby("product_id").mean()[['price', 'freight_value']]
 tmp = tmp.add_prefix("product_")
 tmp = tmp.reset_index()
 my_products = pd.merge(my_products,tmp, on="product_id",how="left")
+
+##
+## Product category
+##
+
+# ## old version :
+# y = products[["product_id","product_category_name"]]
+# y = y.set_index("product_id").astype("object")
+# y = y.fillna("missing")
+# y = y.astype("category")
+
+# all_cat = pd.Series(y["product_category_name"].cat.categories, name ="product_category_old" )
+# new_cat = pd.Series(y["product_category_name"].cat.categories, name ="product_category_name" )
+# for idx in all_cat.index :
+#     cat = all_cat[idx]
+#     new_cat.at[idx] = cat.split("_")[0]
+# rename_cat = pd.merge(all_cat,new_cat, left_index=True, right_index=True)
+# rename_cat = rename_cat.set_index("product_category_old").to_dict()
+# rename_cat['la']="cuisine"
+# y = y.replace(rename_cat["product_category_name"])
+# y = y.astype("category").reset_index()
+# my_products = pd.merge(y,my_products, on="product_id",how="left")
+
+rename_categories_english = {
+    "home_furnitures" : ['bed_bath_table','furniture_decor', 
+                         'housewares','office_furniture',
+                         'kitchen_dining_laundry_garden_furniture',
+                         'home_confort','furniture_mattress_and_upholstery',
+                         'furniture_living_room', 'furniture_bedroom',
+                         'home_comfort_2',
+                        ],
+    "home_electronics":['small_appliances','air_conditioning',
+                        'home_appliances','home_appliances_2',
+                        'la_cuisine','small_appliances_home_oven_and_coffee',
+                        "kitchen_portables_and_food_preparers"
+                       ],
+    "electronics":['computers_accessories','telephony',
+                   'tablets_printing_image', 'fixed_telephony',
+                   'consoles_games', 'audio','electronics',
+                   'computers',
+                  ],
+    "multimedia" : ['books_general_interest','books_imported',
+                    'cine_photo','music', 
+                    'cds_dvds_musicals', 'dvds_blu_ray',
+                   ], 
+    "fashion" : ['fashion_bags_accessories','fashion_shoes',
+                 'fashion_male_clothing','fashion_underwear_beach',
+                 'fashion_sport', 'fashio_female_clothing',
+                ],
+    "children" : [ 'baby','toys',
+                   'fashion_childrens_clothes'
+                 ],
+    "health" : ['health_beauty', 'perfumery',
+                'diapers_and_hygiene'
+               ],
+    "food_drink" : ['food_drink','market_place',
+                    'agro_industry_and_commerce','food',
+                    'drinks'
+                    ],
+    "leisure" : ['auto','sports_leisure',
+                 'watches_gifts',  'stationery',
+                 'luggage_accessories', 'pet_shop',
+                 'party_supplies','musical_instruments',
+                 'arts_and_craftmanship',
+                ],
+    "decoration" : ['cool_stuff','art',
+                    'christmas_supplies','flowers',
+                   ],
+    "DIY" : ['garden_tools','construction_tools_construction',
+             'costruction_tools_garden','costruction_tools_tools', 
+             'books_technical','home_construction',
+             'construction_tools_lights','construction_tools_safety',
+             'industry_commerce_and_business',
+            ],
+    "security" : ['signaling_and_security','security_and_services']
+    }
+
+rename_cat = product_category_name_translation.copy()
+## manquait 2 variables dans la table de traduction :
+rename_cat = rename_cat.append({"product_category_name":"portateis_cozinha_e_preparadores_de_alimentos",
+                   "product_category_name_english" : "kitchen_portables_and_food_preparers"},
+                   ignore_index=True)
+rename_cat = rename_cat.append({"product_category_name": "pc_gamer",
+                   "product_category_name_english" : "pc_gamer"},
+                   ignore_index=True)
+for new_cat, list_old_cat in rename_categories_english.items():
+    bool_idx = rename_cat["product_category_name_english"].isin(list_old_cat)
+    cat_idx = rename_cat.loc[bool_idx].index
+    rename_cat.at[cat_idx, "new_cat_english"] = new_cat
+dict_rename_cat = rename_cat[["product_category_name","new_cat_english"]]
+dict_rename_cat = dict_rename_cat.set_index("product_category_name")
+dict_rename_cat = dict_rename_cat.to_dict()["new_cat_english"]
+
+y = products[["product_id","product_category_name"]]
+# y = y.set_index("product_id")
+y = y.replace(dict_rename_cat)
+y = y.astype("category")
+
+if "product_category_name" in my_products.columns:
+    my_products = my_products.drop(columns="product_category_name")
+my_products = pd.merge(y,my_products, on="product_id",how="right")
+
+## set product_id as index : 
+my_products = my_products.set_index("product_id")
 
 
 ######################################
@@ -277,4 +377,62 @@ for colname in tmp.columns[2:] :
 tmp = tmp.rename(columns=dict_rename)
 my_orders = pd.merge(my_orders, tmp, on="order_id", how="left")
 
+##
+## Feature issues des variables numériques de produits
+##
+tmp = pd.merge(link_order_product, my_products, 
+               on="product_id", how="left")
+tmp = tmp.drop(columns=['product_id',"product_flag_ordered_alone",
+                        "product_price", "product_freight_value"])
+tmp = tmp.groupby("order_id").sum()
+tmp = tmp.add_prefix("sum_")
+tmp = tmp.reset_index()
+my_orders = pd.merge(my_orders,tmp, on="order_id", how="left")
+
+##
+## Feature issues des categories de produits
+##
+
+## extract dummies 
+product_cat_dummies = pd.get_dummies(my_products["product_category_name"])
+product_cat_dummies = product_cat_dummies.add_prefix("product_category_")
+product_cat_dummies = product_cat_dummies.set_index(products["product_id"]).reset_index()
+## get nb of categories in the same product
+order_cat = pd.merge(link_order_product,product_cat_dummies, on="product_id", how="left")
+order_diff_cat = order_cat.drop(columns="product_id")
+order_diff_cat = order_diff_cat.groupby("order_id").sum()
+order_diff_cat[order_diff_cat>1] = 1
+tmp = order_diff_cat.sum(axis=1)
+tmp = tmp.reset_index().rename(columns={0:"count_prod_cat"})
+my_orders = pd.merge(my_orders, tmp, on="order_id", how="left")
+## get nb max of product in the same category
+order_cat_no_duplc = order_cat.drop_duplicates(subset=["order_id","product_id"])
+order_cat_no_duplc = order_cat_no_duplc.drop(columns="product_id")
+order_cat_no_duplc = order_cat.groupby("order_id").sum()
+order_cat_no_duplc.sum(axis=0)
+tmp = order_cat_no_duplc.max(axis=1)
+tmp = tmp.rename("count_max_product_in_cat")
+
+
+## to compute one hot encoder, finally keep categorical for the moment
+# enc = OneHotEncoder(handle_unknown='ignore')
+# enc.fit(y)
+# y_dummies = pd.DataFrame(enc.transform(y).toarray(),
+#                           index = y.index, columns=np.unique(y))
+# y_dummies = y_dummies.add_prefix("order_status_").reset_index()
+# y_dummies = y_dummies.astype("category")
+# my_orders = pd.merge(my_orders, y_dummies, on="order_id", how="left")
+
+## set order_id as index and drop customer_id : 
+my_orders = my_orders.drop(columns="customer_id")
+my_orders = my_orders.set_index("order_id")
+
+#########################################
+#### Construction table my_customers ####
+#########################################
+
+tmp = customers.drop_duplicates(subset="customer_unique_id")
+my_customers = tmp[["customer_unique_id","customer_zip_code_prefix"]]
+
+my_customers = pd.merge(my_customers, rfm, on="customer_unique_id", how="left")
 
