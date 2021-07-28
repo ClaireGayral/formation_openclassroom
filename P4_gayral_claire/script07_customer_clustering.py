@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def cluster_scatter(df, labels, figsize=(10,6)):
     ## df = pd.DataFrame
@@ -49,13 +50,16 @@ def plot_projection_on_frequency_values(df, labels, frequencies):
     plt.title("Projection on Frequency > "+str(freq))
     plt.xlabel(x.name)
     plt.ylabel(y.name)
-    plt.show()
     
     
     
 
 ### modified code from https://scikit-learn.org/stable/auto_examples/mixture/plot_gmm_selection.html
 
+import itertools
+from scipy import linalg
+import matplotlib as mpl
+from sklearn import mixture
 import itertools
 from scipy import linalg
 import matplotlib as mpl
@@ -92,7 +96,9 @@ def plot_set_params_gmm(X, n_components_range = range(4, 13)):
     plt.xticks(n_components_range)
     plt.ylim([bic.min() * 1.01 - .01 * bic.max(), bic.max()])
     plt.title('BIC score per model')
-    xpos = np.mod(bic.argmin()+min(n_components_range)-1.12,
+    ## add star for best model
+    argmin_bic = bic.argmin()+min(n_components_range) 
+    xpos = np.mod(argmin_bic-1.12,
                   len(n_components_range)) + .65 +.2 * np.floor(bic.argmin() / len(n_components_range))
     plt.text(xpos, bic.min() * 0.97 + .03 * bic.max(), '*', fontsize=14)
     spl.set_xlabel('Number of components')
@@ -132,4 +138,4 @@ def plot_set_params_gmm(X, n_components_range = range(4, 13)):
     plt.title(f'Selected GMM: {best_gmm.covariance_type} model, '
               f'{best_gmm.n_components} components')
     plt.subplots_adjust(hspace=.35, bottom=.02)
-    plt.show()
+
