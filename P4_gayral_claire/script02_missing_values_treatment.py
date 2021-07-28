@@ -189,7 +189,7 @@ def launch_my_pseudo_CV(X,my_meth,param_grid, cv = 5):
             res[params_set][fold_key] = y_table
     return res
 
-def plot_MSE_scores_KNN_impute(res,param_grid,fig_name=None) :
+def plot_MSE_scores_KNN_impute(res,param_grid,fig_name=None,figsize=(5,3)) :
     MSE_mean = []
     MSE_std = []
 
@@ -210,7 +210,7 @@ def plot_MSE_scores_KNN_impute(res,param_grid,fig_name=None) :
     for mean, std, params in iterator:
         print("MSE = %0.3f (+/-%0.3f) for %s" %(mean, 2*std, params))
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize)
     ax.errorbar(x=param_grid["n_neighbors"], y=np.array(CV_results_["mean_MSE_score"]),
                 xerr=0, yerr=np.array(CV_results_["std_MSE_score"]))
     plt.xlabel("Number of neighbors")

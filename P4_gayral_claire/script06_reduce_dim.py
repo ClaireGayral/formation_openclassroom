@@ -248,7 +248,7 @@ def display_scree_plot(pca):
     plt.xlabel("rang de l'axe d'inertie")
     plt.ylabel("pourcentage d'inertie")
     plt.title("Eboulis des valeurs propres")
-    plt.show(block=False)
+    #plt.show(block=False)
     
 ##
 ## TP hierarchical clustering
@@ -266,4 +266,3 @@ def plot_dendrogram(Z, names, figsize = (10,25)):
         labels = names,
         orientation = "left",
     )
-    plt.show()
