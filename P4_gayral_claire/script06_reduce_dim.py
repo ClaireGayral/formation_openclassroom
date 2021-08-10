@@ -5,6 +5,10 @@ import pandas as pd
 import matplotlib._color_data as mcd
 import random
 
+##
+## annexe 
+## 
+
 def get_str_vars(list_of_var):
     # from a list of str, return a sentence
     # if the line is too long (sup to 40), cut
@@ -42,6 +46,10 @@ def draw_cluster_legend(ax2,clustering, corresp_color_dict):
     ax2.get_yaxis().set_visible(False)
     plt.axis("off")
     return(ax2)
+
+##
+## PCA
+## 
 
 def display_circles(pcs, n_comp, my_meth, axis_ranks, labels=None, 
                     label_rotation=0, lims=None, clustering = None, 
@@ -249,9 +257,105 @@ def display_scree_plot(pca):
     plt.ylabel("pourcentage d'inertie")
     plt.title("Eboulis des valeurs propres")
     #plt.show(block=False)
-    
+   
+#
 ##
-## TP hierarchical clustering
+## NMF
+##
+
+def frobenius_func(y, y_pred):
+    return(np.linalg.norm(y-y_pred,"fro"))
+
+
+def pseudo_cv_reduce_dim(X_, my_meth, param_grid,my_score, cv = 5):
+    ## MAP THE DICT OF LIST INTO LIST OF DICT :
+    param_dirg = model_selection.ParameterGrid(param_grid)
+
+    ## INITIALIZATION : 
+    res = {} # dict of dict 
+    res["params"]=[]
+    for kwargs in param_dirg :
+        res["params"].append(kwargs)
+    dict_score = {}
+    dict_time_fit = {}
+    dict_time_predict = {}
+
+    k_iter = 1
+    ## SET FOLDS :
+    kf = model_selection.KFold(n_splits = 5)
+    CV_split_iterator = kf.split(X_) 
+
+    ## LOOP ON FOLDS :
+    for CV_train_range_index, CV_test_range_index in CV_split_iterator : 
+        ## extract train
+        train_index = X_.index[CV_train_range_index]
+        train = X_.iloc[CV_train_range_index]
+        ## LOOP ON PARAM NAMES (HERE ONLY 1)
+        fold_key = "fold"+str(k_iter)
+        ## init fold dict
+        dict_score[fold_key] = []
+        dict_time_fit[fold_key] = []
+        dict_time_predict[fold_key] = []
+        ## loop on different set of kwargs 
+        for kwargs in param_dirg :
+            ## SET PARAMS IN METH :
+            my_meth.set_params(**kwargs)
+            ## PREDICT TEST VALUES : 
+            t = time.time()
+            W = my_meth.fit_transform(train)
+            dict_time_fit[fold_key].append(time.time() - t)
+            t = time.time()
+            H = my_meth.components_
+            X_pred = np.dot(W,H)
+            dict_score[fold_key].append(my_score(train, X_pred))
+            dict_time_predict[fold_key].append(time.time() - t)
+        k_iter += 1
+    ## save in same shape as sklearn GridSearchCV     
+    df_time_fit = pd.DataFrame(dict_time_fit)
+    df_time_predict = pd.DataFrame(dict_time_predict)
+    df_score = pd.DataFrame(dict_score)
+    res["mean_fit_time"] = df_time_fit.mean(axis=1).values
+    res["std_fit_time"] = df_time_fit.std(axis=1).values
+    res["mean_score_time"] = df_time_predict.mean(axis=1).values
+    res["std_score_time"] = df_time_predict.std(axis=1).values
+    res["mean_test_score"] = df_score.mean(axis=1).values
+    res["std_test_score"] = df_score.std(axis=1).values
+    return(res)
+
+def plot_coeffs(my_meth, X_, X_name= "X"):
+    '''
+    from dim reduceur, plot coefficients of the 2 first axis
+    and return coefficients on whole axis
+    
+    Parameters:
+    -----------------------------------------
+    my_meth = sklearn.decomposition methode like PCA of NMF 
+    X_ = pd.DataFrame() of data to be reduced
+    
+    Returns:
+    -----------------------------------------
+    pd.DataFrame of coefficients
+    '''
+    my_meth.set_params(**{"n_components": X_.shape[1]})
+    my_meth.fit(X_)
+
+    coeffs = pd.DataFrame(my_meth.components_, columns = X_.columns,
+                          index = ["ax_"+str(k) for k in np.arange(1,my_meth.n_components+1)])
+    for colname in coeffs.columns :
+        plt.scatter(x = coeffs.loc["ax_1", colname], 
+                    y = coeffs.loc["ax_2", colname],
+                    label = colname)
+    plt.xlabel("coeff axis 1")
+    plt.ylabel("coeff axis 2")
+    my_meth_name = str(my_meth).split("(")[0]
+    plt.title(my_meth_name+" on "+ str(X_name),fontsize=14)
+
+    plt.legend()
+    return(coeffs)
+
+
+##
+## hierarchical clustering
 ## 
 
 import matplotlib.pyplot as plt
