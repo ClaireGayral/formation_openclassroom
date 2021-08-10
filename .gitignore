@@ -7,6 +7,8 @@ res/
 
 %% packages from github :
 copkmeans/
+tagger_parser_ud/
+fastText-0.9.2/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
