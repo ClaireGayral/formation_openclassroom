@@ -2,6 +2,10 @@ import pickle
 from bs4 import BeautifulSoup
 import pandas as pd
 
+## load vectorizer :
+with open('preprocess_txt.pkl', 'rb') as f:
+    countvec = pickle.load(f))
+
 ## filter language 
 map_lang_dict = {"Qt_framework": ["Qt_framework","qt", "qt4", "qt5", "qt-creator", "pyqt"], 
  "VisualBasic": ["VisualBasic", "VB", "vb", "Vb", "VB.net"],
@@ -62,4 +66,6 @@ def main():
         tokens = replace_with_dict_val(tokens, lang_dict)
         x_test.append(" ".join(tokens))
     x_test = pd.Series(x_test)
-    return(clf.predict(X_test))
+    ## count-vectorize :
+    X_test = countvec.transform(x_test).toarray()
+    return(X_test)
