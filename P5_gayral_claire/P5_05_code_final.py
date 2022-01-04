@@ -36,3 +36,11 @@ lang_dict = {}
 for k,v in map_lang_dict.items() :
     for lang in v :
         lang_dict[lang] = k
+        
+def replace_with_dict_val(my_list, my_dict) :
+    for i in range(len(my_list)) :
+        t = my_list[i]
+        if t in lang_dict.keys():
+            t = lang_dict[t]
+    return(my_list)
+
