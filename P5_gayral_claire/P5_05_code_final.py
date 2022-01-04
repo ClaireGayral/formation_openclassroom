@@ -1,6 +1,8 @@
 import pickle
 from bs4 import BeautifulSoup
 import pandas as pd
+# import sys 
+# post_inputs = sys.argv[1]
 
 ## load vectorizer :
 with open('preprocess_txt.pkl', 'rb') as f:
@@ -46,30 +48,46 @@ for k,v in map_lang_dict.items() :
         
 ## preprocess : 
 def extract_text_btw_html(html):
-#     html = title_+body_
-    soup = BeautifulSoup(html)
+    ## automatic clean of text : remove html balises
+    soup = BeautifulSoup(html, features="html.parser")
     for script in soup(["script", "style"]):
         script.decompose()
     return(list(soup.stripped_strings))
 
 def replace_with_dict_val(my_list, my_dict) :
+    ## replace values in list if they are in dict keys
     for i in range(len(my_list)) :
         t = my_list[i]
         if t in lang_dict.keys():
             t = lang_dict[t]
     return(my_list)
 
-def main():
-    ## preprocess
+def main(post_input):
+    '''
+    Main function of code final, predict the best tag for post
+    
+    Parameters:
+    -----------------------------------------
+    post_input (str) : the text of the post to be tagged
+    
+    Returns:
+    -----------------------------------------
+    list of most probable tags (str) associate to the post
+    '''
+    ## init preprocess
     x_test = []
-    for text in post_inputs : 
-        list_text = extract_text_btw_html(text)
-        text =  ' '.join(list_text)
-        tokens = text.split(" ")
-        tokens = replace_with_dict_val(tokens, lang_dict)
-        x_test.append(" ".join(tokens))
+    text = post_input
+    ## preprocess - remove non textual data
+    list_text = extract_text_btw_html(text)
+    text =  ' '.join(list_text)
+    tokens = text.split(" ")
+    ## preprocess - filter langage versions
+    tokens = replace_with_dict_val(tokens, lang_dict)
+    x_test.append(" ".join(tokens))
+    ## right shape preprocessed data : 
     x_test = pd.Series(x_test)
     ## count-vectorize :
     X_test = countvec.transform(x_test).toarray()
     ## classif prediction : 
     return(clf.predict(X_test))
+ 
