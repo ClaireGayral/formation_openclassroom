@@ -37,6 +37,14 @@ for k,v in map_lang_dict.items() :
     for lang in v :
         lang_dict[lang] = k
         
+## preprocess : 
+def extract_text_btw_html(html):
+#     html = title_+body_
+    soup = BeautifulSoup(html)
+    for script in soup(["script", "style"]):
+        script.decompose()
+    return(list(soup.stripped_strings))
+
 def replace_with_dict_val(my_list, my_dict) :
     for i in range(len(my_list)) :
         t = my_list[i]
@@ -44,3 +52,14 @@ def replace_with_dict_val(my_list, my_dict) :
             t = lang_dict[t]
     return(my_list)
 
+def main():
+    ## preprocess
+    x_test = []
+    for text in post_inputs : 
+        list_text = extract_text_btw_html(text)
+        text =  ' '.join(list_text)
+        tokens = text.split(" ")
+        tokens = replace_with_dict_val(tokens, lang_dict)
+        x_test.append(" ".join(tokens))
+    x_test = pd.Series(x_test)
+    return(clf.predict(X_test))
