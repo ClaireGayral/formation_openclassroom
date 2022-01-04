@@ -4,7 +4,10 @@ import pandas as pd
 
 ## load vectorizer :
 with open('preprocess_txt.pkl', 'rb') as f:
-    countvec = pickle.load(f))
+    countvec = pickle.load(f)
+## load classifier :
+with open('best_clf.pkl', 'rb') as f:
+    clf = pickle.load(f)
 
 ## filter language 
 map_lang_dict = {"Qt_framework": ["Qt_framework","qt", "qt4", "qt5", "qt-creator", "pyqt"], 
@@ -68,4 +71,5 @@ def main():
     x_test = pd.Series(x_test)
     ## count-vectorize :
     X_test = countvec.transform(x_test).toarray()
-    return(X_test)
+    ## classif prediction : 
+    return(clf.predict(X_test))
