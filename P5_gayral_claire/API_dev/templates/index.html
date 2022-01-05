@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Index de l'API {% endblock %}</h1>
+    {% for message in messages %}
+        <div class='message'>
+            <h3>{{ message['title'] }}</h3>
+            <p>{{ message['content'] }}</p>
+        </div>
+    {% endfor %}
+    
+    <h1>
+    <nav>
+        <a href="{{ url_for('create') }}"> 
+            <button> C'est parti !  </button>
+        </a>
+    </nav>
+  </h1>
+{% endblock %}
