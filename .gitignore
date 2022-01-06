@@ -7,6 +7,12 @@ res/
 notebook_mentor/
 en_core_web_md*
 *Copy*.ipynb
+__pycache__/
+lib/
+old/
+
+
+
 
 %% packages from github :
 copkmeans/
