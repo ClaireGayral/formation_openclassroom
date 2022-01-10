@@ -28,20 +28,16 @@ cat_vars = soil_vars + area_vars
 num_vars = [col for col in df_train.columns if col not in cat_vars]
 
 ## global variables : 
-cat_vars_selected = ['Wilderness_Area4', 'Soil_Type10', 'Soil_Type38', 
-                     'Soil_Type39', 'Soil_Type40', 'Soil_Type4', 'Soil_Type30', 
-                     'Soil_Type23', 'Wilderness_Area3', 'Soil_Type2', 
-                     'Wilderness_Area1', 'Soil_Type13',
-                     'Soil_Type22', 'Soil_Type17']
+cat_vars_selected = ['Wilderness_Area4', 'Soil_Type10', 'Soil_Type38', 'Soil_Type39',
+           'Soil_Type40', 'Soil_Type4', 'Soil_Type30', 'Soil_Type23',
+           'Wilderness_Area3', 'Soil_Type2', 'Wilderness_Area1', 'Soil_Type13',
+           'Soil_Type22', 'Soil_Type17', 'Soil_Type3', 'Soil_Type11',
+           'Soil_Type35', 'Soil_Type24']
 
-hloc_pca_coeffs = [[ 0.65767998,  0.64141829,  0.39501851],
-                   [-0.22518748, -0.33300285,  0.91564169],
-                   [-0.71885161,  0.69115243,  0.07456994]]
+num_var_selected = [['Elevation', 'Slope', 'Horizontal_Distance_To_Hydrology',
+                     'Horizontal_Distance_To_Roadways', 'Hillshade_9am', 
+                     'Hillshade_3pm','Horizontal_Distance_To_Fire_Points']]
                    
-hloc_vars = ["Horizontal_Distance_To_Roadways",
-             "Horizontal_Distance_To_Fire_Points",
-             "Horizontal_Distance_To_Hydrology"]
-           
 ##
 ## Preprocessing
 ##
@@ -51,55 +47,11 @@ def get_cat_X(X_):
     return(X_.loc[:,cat_vars_selected])
     
 ## numerical data :
-def get_hloc_pca_coeffs(X_) :
-    ''' how the "hloc_pca_coeffs" is computed, 
-        with X_ = X_train 
-    '''
-    X_hloc = X_.loc[:,hloc_vars]
-    X_hloc = pd.DataFrame(StandardScaler().fit_transform(X_hloc), 
-                          index=X_hloc.index, columns=X_hloc.columns)
-    ## project :
-    pca = PCA(n_components=X_hloc.shape[1]).fit(X_hloc)
-    hloc_pca_axis = ["HDis_ax_"+str(k) for k in range(1,pca.n_components+1)]
-    X_hloc = pd.DataFrame(pca.transform(X_hloc), 
-                          index = X_hloc.index, columns=hloc_pca_axis)
-    hloc_pca_coeffs = pd.DataFrame(pca.components_, 
-                                   columns= hloc_vars, index = X_hloc.columns)
-    return(hloc_pca_coeffs)
-    
-def project_hloc_pca(X_, hloc_pca_coeffs):
-    '''
-    Project on train pca axis given 
-        by the pca coeffs "hloc_pca_coeffs"
-        
-    Returns the pd.DataFrame of the projected location variables
-    '''
-    X_hloc = X_.loc[:,hloc_vars]
-    hloc_pca_axis = ["HDis_ax_"+str(k) for k in range(1,pca.n_components+1)]
-    hloc_pca_coeffs = pd.DataFrame(hloc_pca_coeffs, 
-                                   columns=hloc_vars, index=hloc_pca_axis)
-    ## standardize : 
-    hloc_std = StandardScaler().fit(X_hloc)
-    X_hloc_std = pd.DataFrame(hloc_std.transform(X_hloc), 
-                          index=X_hloc.index, columns=X_hloc.columns)
-    ## pcq project :
-    X_hloc_proj = X_hloc_std.dot(hloc_pca_coeffs.transpose())
-    return(X_hloc_proj)
-    
+
 def get_num_X(X_):
-    ## Let Elevation var intact :
-    X_num = X_.loc[:,["Elevation"]]
-
-    ### Hillshade mean and std :
-    hillshade_vars = ["Hillshade_3pm","Hillshade_Noon", "Hillshade_9am"]
-    X_num.loc[:,"hillshade_std"] = X_.loc[:,hillshade_vars].std(axis=1)
-    X_num.loc[:,"hillshade_median"] = X_.loc[:,hillshade_vars].median(axis=1)
-
-    ### PCA on localisation variables : 
-    X_hloc_proj = project_hloc_pca(X_,hloc_pca_coeffs)
-    X_num = pd.concat([X_num,X_hloc_proj], axis=1)
+    X_num = X_.loc[:,num_vars_selected]
     return(X_num)
-
+    
 def preprocess1(X_, calcul_hloc_pca=False):
     ''' 
     Concatenate num and cat preprocess 
@@ -113,17 +65,7 @@ def preprocess1(X_, calcul_hloc_pca=False):
     
     Returns:
     -----------------------------------------
-    '''
-    if calcul_hloc_pca :
-        hloc_vars = ["Horizontal_Distance_To_Roadways",
-                     "Horizontal_Distance_To_Fire_Points",
-                     "Horizontal_Distance_To_Hydrology"]
-        X_hloc = X.loc[:,hloc_vars]
-        hloc_pca_coeffs = get_hloc_pca_coeffs(X_hloc)
-    else : 
-        hloc_pca_coeffs = [[ 0.65767998,  0.64141829,  0.39501851],
-                           [-0.22518748, -0.33300285,  0.91564169],
-                           [-0.71885161,  0.69115243,  0.07456994]]        
+    '''   
     X_num = get_num_X(X_)
     X_cat = get_cat_X(X_)
     X_complete = pd.concat([X_cat, X_num], axis=1)
