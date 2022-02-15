@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Traiter une nouvelle publication {% endblock %}</h1>
+    <form method="post">
+        <label for="content">Le texte de la publication : </label>
+        <br>
+        <textarea name="content"
+                  placeholder="Message content"
+                  rows="15"
+                  cols="60"
+                  >{{ request.form['content'] }}</textarea>
+        <br>
+        <button type="submit">Prédire les tags</button>
+    </form>
+    
+    {% for mesg in get_flashed_messages() %}
+      <h1>{{ mesg }}</h1>
+    {% endfor %}    
+{% endblock %}
