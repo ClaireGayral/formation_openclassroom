@@ -10,7 +10,7 @@ en_core_web_md*
 __pycache__/
 lib/
 old/
-
+*.csv
 
 
 
