@@ -15,6 +15,8 @@ messages = [{'title': 'Présentation',
             {'title': 'Utilisation',
              'content': "Pour l'utiliser, il suffit de coller le contenu de la publication à tagguer dans le lien suivant. Elle peut être avec balise (format html par exemple) ou juste les mots."}
             ]
+            
+import P5_05_code_final
 
 @app.route('/')
 def index():
@@ -28,10 +30,23 @@ def create():
             flash('Merci de remplir le champ avant de lancer le programme !')
         else:
             messages.append({'content': content})
-            return redirect(url_for('index'))
-
+            global content
+            return redirect(url_for('results'))
     return render_template('create.html')
     
+@app.route('/results/', methods=('GET', 'POST'))
+def results():
+    predicted
+    messages[-1].append()
+    if request.method == 'POST':
+        content = request.form['content']
+        if not content:
+            flash('Merci de remplir le champ avant de lancer le programme !')
+        else:
+            messages.append({'content': content})
+            return redirect(url_for('index'))
+
+    return render_template('results.html')  
     
     
     
