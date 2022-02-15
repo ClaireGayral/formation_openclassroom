@@ -102,7 +102,7 @@ def preprocess2(X_train, X_test):
     res_test = pd.DataFrame(res_test, index=X_test.index, 
                              columns=["ax_"+str(k+1) for k in range(n_compo)])
     return(res_train,res_test)
-
+    
 ##
 ## Support Vector Machine classification with rbf kernel:
 ##
