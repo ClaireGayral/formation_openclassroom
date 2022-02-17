@@ -3,6 +3,7 @@ __MACOSX/
 data/
 *.zip
 brouillons_et_tests/
+brouillons/
 res/
 notebook_mentor/
 en_core_web_md*
@@ -10,6 +11,9 @@ en_core_web_md*
 __pycache__/
 lib/
 old/
+my_model/
+cp.ckpt.data-00000-of-00001
+*.h5
 *.csv
 
 
