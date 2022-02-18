@@ -12,7 +12,8 @@
     * Naive Bayes, Gradient Boosting, Random Forest
     * Classification binaire ou multi-classe
 * API flask pour les résultats 
-  
+  ![alt text](https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P5_api_flask_index.png)
+  ![alt text](https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P5_api_flask_create.png)
 
 *Origine des données* : [Outil de requêtes SQL sur la BDD de stackoverflow](https://data.stackexchange.com/stackoverflow/query/new)
 
