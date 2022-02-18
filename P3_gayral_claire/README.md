@@ -8,5 +8,6 @@
 
 *Origine des données* : [Seattle Open Data](https://data.seattle.gov/)
 
-
-
+<p align="center">
+  <img src="https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P3_best_model_energy.jpg" alt="Sublime's custom image"/>
+</p>
