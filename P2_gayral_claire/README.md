@@ -11,3 +11,7 @@
 
 Comme demandé, le travail est découpé en 2 partie : une première partie exploratoire consiste en le nettoyage et l'exploration des données, faite dans le notebook 
 PSanté_01_notebooknettoyage, la deuxième partie propose différentes modélisation statistique est dans le second notebook. Le diaporama de présentation synthétise le travail.
+
+<p align="center">
+  <img src="https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P2_hist_nutri_score_colored.jpg" alt="Sublime's custom image"/>
+</p>
