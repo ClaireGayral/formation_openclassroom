@@ -9,4 +9,12 @@
 *Origine des données* : [Compétition kaggle OLIST](https://www.kaggle.com/olistbr/brazilian-ecommerce)
 
 
+Clusters on RFM : 
+<p align="center">
+  <img src="https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P4_RFM_2D_kmeans_8.jpg" alt="Sublime's custom image"/>
+</p>
 
+Analyse des comportements :
+<p align="center">
+  <img src="https://github.com/ClaireGayral/formation_openclassroom/blob/master/images/P4_rfm_analyse_clusters.jpg" alt="Sublime's custom image"/>
+</p>
